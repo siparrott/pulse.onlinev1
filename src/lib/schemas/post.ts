@@ -32,7 +32,7 @@ export const postFormSchema = z.object({
   // Phase 1: Platform-safe media detection
   visual_handling: z.enum(['single', 'variants']).default('single'),
   media_aspect_ratio: z.number().nullable().optional(),
-  media_risk_by_platform: z.record(z.enum(['ok', 'warn', 'unknown'])).optional(),
+  media_risk_by_platform: z.record(z.string(), z.enum(['ok', 'warn', 'unknown'])).optional(),
   // Phase 2: Visual variant generation
   visual_variants: z.array(z.any()).optional(),
   visual_variant_mode: z.enum(['auto', 'ai']).default('auto'),

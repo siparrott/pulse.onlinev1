@@ -220,6 +220,8 @@ export default function ChannelsPage() {
         asset_requirements: data.asset_requirements || {},
         default_timezone: data.default_timezone || 'Europe/London',
         default_schedule_time: data.default_schedule_time || '09:00',
+        brand_pack_id: data.brand_pack_id || null,
+        ai_daily_cap: data.ai_daily_cap || 10,
         archived_at: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),

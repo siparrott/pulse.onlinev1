@@ -284,7 +284,7 @@ function validateStandard(
 function validateExperimental(
   post: PublisherPost,
   _channel: PublisherChannel,
-  _assets: PublisherAsset[]
+  assets: PublisherAsset[]
 ): GovernanceRefusal[] {
   const refusals: GovernanceRefusal[] = [];
   

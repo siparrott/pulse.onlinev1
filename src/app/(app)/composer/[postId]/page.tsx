@@ -149,7 +149,7 @@ export default function ComposerPage() {
     
     setPost((prev) => ({
       ...prev,
-      platform_targets: updated,
+      platform_targets: updated as Platform[],
       media_risk_by_platform: risks,
     }));
   };
@@ -724,7 +724,7 @@ export default function ComposerPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant={saveSuccess ? 'default' : 'secondary'} onClick={handleSave} disabled={saving}>
+          <Button variant={saveSuccess ? 'primary' : 'secondary'} onClick={handleSave} disabled={saving}>
             {saveSuccess ? (
               <><CheckCircle className="h-4 w-4 mr-2" />Saved!</>
             ) : (
@@ -1234,7 +1234,7 @@ export default function ComposerPage() {
                           <span className="text-sm font-medium text-zinc-200">
                             {variant.platformKey.replace(/_/g, ' ')}
                           </span>
-                          <Badge variant="secondary" className="text-xs">
+                          <Badge variant="info" className="text-xs">
                             {variant.method}
                           </Badge>
                           <span className="text-xs text-zinc-500">
