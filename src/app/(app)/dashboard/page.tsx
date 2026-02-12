@@ -116,7 +116,7 @@ export default function DashboardPage() {
       </Card>
 
       {/* Getting Started */}
-      <Card className="border-emerald-800 bg-emerald-950/20">
+      <Card className="border-emerald-900/50 bg-emerald-950/30">
         <CardHeader>
           <CardTitle className="text-emerald-400">Getting Started</CardTitle>
         </CardHeader>

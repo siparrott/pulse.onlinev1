@@ -14,7 +14,7 @@ import {
 import { cn } from '@/lib/utils/cn';
 
 const navItems = [
-  { href: '/', label: 'Dashboard', icon: Radio },
+  { href: '/dashboard', label: 'Dashboard', icon: Radio },
   { href: '/channels', label: 'Channels', icon: Layers },
   { href: '/imports', label: 'Import CSV', icon: Upload },
   { href: '/queue', label: 'Queue', icon: ListTodo },
@@ -28,12 +28,9 @@ export function Navigation() {
   return (
     <nav className="fixed left-0 top-0 h-full w-64 bg-zinc-900 border-r border-zinc-800">
       <div className="p-6">
-        <Link href="/" className="flex items-center gap-2">
+        <Link href="/dashboard" className="flex items-center gap-2">
           <Radio className="h-8 w-8 text-emerald-500" />
-          <div>
-            <h1 className="text-xl font-bold text-white">Pulse</h1>
-            <p className="text-xs text-zinc-500">.online</p>
-          </div>
+          <span className="text-xl font-bold text-white">pulse.online</span>
         </Link>
       </div>
 

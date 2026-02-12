@@ -29,6 +29,9 @@ export default function ImportsPage() {
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{ imported: number; errors: string[] } | null>(null);
   const [storageMode, setStorageMode] = useState<'supabase' | 'local'>('local');
+  const [importStartDate, setImportStartDate] = useState<string>(
+    new Date().toISOString().split('T')[0]
+  );
 
   useEffect(() => {
     fetchChannels().then(setChannels);
@@ -64,7 +67,7 @@ export default function ImportsPage() {
   const handleValidate = () => {
     if (!isValidMapping(mapping)) return;
 
-    const result = validateAndPreview(csvData, mapping as ColumnMapping, selectedChannel);
+    const result = validateAndPreview(csvData, mapping as ColumnMapping, selectedChannel, importStartDate);
     setPreview(result);
     setStep('preview');
   };
@@ -116,7 +119,14 @@ export default function ImportsPage() {
   };
 
   const isValidMapping = (m: Partial<ColumnMapping>): m is ColumnMapping => {
-    return !!(m.date && m.platform_targets && m.content_type && m.caption);
+    // Platform is always required
+    if (!m.platform_targets) return false;
+    // Date OR Week is required (week derives dates)
+    if (!m.date && !m.week) return false;
+    // Caption OR Theme is required (theme generates placeholder captions)
+    if (!m.caption && !m.theme) return false;
+    // Content type is nice-to-have — can be derived from channel column
+    return true;
   };
 
   const channelOptions = [
@@ -249,19 +259,40 @@ export default function ImportsPage() {
               Match your CSV columns to the required fields. Found {csvData.length} rows.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-5">
+            {/* Smart detection hint */}
+            {mapping.week && !mapping.date && (
+              <div className="text-xs text-emerald-400 bg-emerald-500/10 p-3 rounded-lg border border-emerald-800/30">
+                <span className="font-medium">📅 Content plan detected:</span> No date column found — dates will be generated from the Week column starting from the date below.
+              </div>
+            )}
+            {!mapping.caption && mapping.theme && (
+              <div className="text-xs text-amber-400 bg-amber-500/10 p-3 rounded-lg border border-amber-800/30">
+                <span className="font-medium">📝 No caption column detected:</span> Placeholder captions will be generated from Theme + Channel values. You can edit them later in the composer.
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <Select
-                label="Date *"
+                label="Date (or leave blank if using Week)"
                 value={mapping.date || ''}
                 onChange={(e) => handleMappingChange('date', e.target.value)}
                 options={[
-                  { value: '', label: 'Select column...' },
+                  { value: '', label: 'No date column' },
                   ...columns.map((c) => ({ value: c, label: c })),
                 ]}
               />
               <Select
-                label="Platform *"
+                label="Week (generates dates if no Date column)"
+                value={mapping.week || ''}
+                onChange={(e) => handleMappingChange('week', e.target.value)}
+                options={[
+                  { value: '', label: 'No week column' },
+                  ...columns.map((c) => ({ value: c, label: c })),
+                ]}
+              />
+              <Select
+                label="Platform / Channel *"
                 value={mapping.platform_targets || ''}
                 onChange={(e) => handleMappingChange('platform_targets', e.target.value)}
                 options={[
@@ -270,20 +301,20 @@ export default function ImportsPage() {
                 ]}
               />
               <Select
-                label="Content Type *"
+                label="Content Type (auto-detected if empty)"
                 value={mapping.content_type || ''}
                 onChange={(e) => handleMappingChange('content_type', e.target.value)}
                 options={[
-                  { value: '', label: 'Select column...' },
+                  { value: '', label: 'Auto-detect from Channel' },
                   ...columns.map((c) => ({ value: c, label: c })),
                 ]}
               />
               <Select
-                label="Caption *"
+                label="Caption (or leave blank to auto-generate)"
                 value={mapping.caption || ''}
                 onChange={(e) => handleMappingChange('caption', e.target.value)}
                 options={[
-                  { value: '', label: 'Select column...' },
+                  { value: '', label: 'Auto-generate from Theme' },
                   ...columns.map((c) => ({ value: c, label: c })),
                 ]}
               />
@@ -292,7 +323,16 @@ export default function ImportsPage() {
                 value={mapping.theme || ''}
                 onChange={(e) => handleMappingChange('theme', e.target.value)}
                 options={[
-                  { value: '', label: 'Select column...' },
+                  { value: '', label: 'No theme column' },
+                  ...columns.map((c) => ({ value: c, label: c })),
+                ]}
+              />
+              <Select
+                label="Notes / Angle (optional)"
+                value={mapping.notes || ''}
+                onChange={(e) => handleMappingChange('notes', e.target.value)}
+                options={[
+                  { value: '', label: 'No notes column' },
                   ...columns.map((c) => ({ value: c, label: c })),
                 ]}
               />
@@ -301,7 +341,7 @@ export default function ImportsPage() {
                 value={mapping.cta || ''}
                 onChange={(e) => handleMappingChange('cta', e.target.value)}
                 options={[
-                  { value: '', label: 'Select column...' },
+                  { value: '', label: 'No CTA column' },
                   ...columns.map((c) => ({ value: c, label: c })),
                 ]}
               />
@@ -310,11 +350,30 @@ export default function ImportsPage() {
                 value={mapping.hashtags || ''}
                 onChange={(e) => handleMappingChange('hashtags', e.target.value)}
                 options={[
-                  { value: '', label: 'Select column...' },
+                  { value: '', label: 'No hashtags column' },
                   ...columns.map((c) => ({ value: c, label: c })),
                 ]}
               />
             </div>
+
+            {/* Start date picker for week-based imports */}
+            {mapping.week && !mapping.date && (
+              <div className="border-t border-zinc-800 pt-4">
+                <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                  Calendar Start Date
+                </label>
+                <p className="text-xs text-zinc-500 mb-2">
+                  Week 1 begins on this date. Each subsequent week starts 7 days later.
+                </p>
+                <input
+                  type="date"
+                  value={importStartDate}
+                  onChange={(e) => setImportStartDate(e.target.value)}
+                  className="w-48 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 focus:border-emerald-500 focus:outline-none"
+                />
+              </div>
+            )}
+
             <div className="flex gap-3">
               <Button variant="secondary" onClick={() => setStep('upload')}>
                 Back

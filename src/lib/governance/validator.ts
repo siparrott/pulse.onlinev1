@@ -5,6 +5,7 @@ import type {
   GovernanceStatus,
   AssetRequirements,
   PublisherAsset,
+  Platform,
 } from '@/lib/types/database';
 
 export interface GovernanceResult {
@@ -171,6 +172,55 @@ function checkImageRecommended(
   return null;
 }
 
+/**
+ * Phase 1: Check platform media requirements
+ * Warns when visual_handling is 'single' and platforms have 'warn' risk
+ */
+function checkPlatformMediaRequirements(
+  post: PublisherPost,
+  assets: PublisherAsset[]
+): GovernanceRefusal[] {
+  const refusals: GovernanceRefusal[] = [];
+
+  // Only check if we have assets and risk data
+  if (assets.length === 0 || !post.media_risk_by_platform) {
+    return refusals;
+  }
+
+  // Only warn if using single image handling
+  if (post.visual_handling === 'variants') {
+    return refusals;
+  }
+
+  // Find platforms with cropping risk
+  const warnedPlatforms: string[] = [];
+  for (const [platform, risk] of Object.entries(post.media_risk_by_platform)) {
+    if (risk === 'warn') {
+      warnedPlatforms.push(platform);
+    }
+  }
+
+  // Add warning if any platforms will crop (max -30 total)
+  if (warnedPlatforms.length > 0) {
+    // Calculate penalty: -10 per platform, cap at -30
+    const penaltyCount = Math.min(warnedPlatforms.length, 3);
+    
+    // Add one refusal for each warned platform (up to 3)
+    for (let i = 0; i < penaltyCount; i++) {
+      const platform = warnedPlatforms[i];
+      refusals.push({
+        rule: 'platform_media_cropping',
+        message: i === 0 
+          ? `This image may be cropped on: ${warnedPlatforms.join(', ')}`
+          : `Platform media mismatch: ${platform}`,
+        severity: 'warning',
+      });
+    }
+  }
+
+  return refusals;
+}
+
 function validateStrict(
   post: PublisherPost,
   channel: PublisherChannel,
@@ -194,6 +244,9 @@ function validateStrict(
   // Image requirements
   const imageRefusal = checkImageRequired(post, channel.asset_requirements, assets);
   if (imageRefusal) refusals.push(imageRefusal);
+  
+  // Phase 1: Platform media requirements
+  refusals.push(...checkPlatformMediaRequirements(post, assets));
   
   return refusals;
 }
@@ -222,6 +275,9 @@ function validateStandard(
   const imageRecommended = checkImageRecommended(post, channel.asset_requirements, assets);
   if (imageRecommended) refusals.push(imageRecommended);
   
+  // Phase 1: Platform media requirements
+  refusals.push(...checkPlatformMediaRequirements(post, assets));
+  
   return refusals;
 }
 
@@ -235,6 +291,9 @@ function validateExperimental(
   // Experimental - only block spam and scams
   refusals.push(...checkSpamPatterns(post.caption));
   refusals.push(...checkScamPatterns(post.caption));
+  
+  // Phase 1: Platform media requirements
+  refusals.push(...checkPlatformMediaRequirements(post, assets));
   
   return refusals;
 }
@@ -282,6 +341,8 @@ function generateUnlockPath(refusals: GovernanceRefusal[]): string | null {
         return 'Consider adding an image for better engagement';
       case 'no_guarantees':
         return 'Replace guarantee language with softer alternatives';
+      case 'platform_media_cropping':
+        return 'Image may be cropped on some platforms - consider using platform-safe aspect ratio';
       default:
         return r.message;
     }

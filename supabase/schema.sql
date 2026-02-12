@@ -17,6 +17,7 @@ CREATE TABLE publisher_channels (
   asset_requirements jsonb NOT NULL DEFAULT '{}'::jsonb,
   default_timezone text NOT NULL DEFAULT 'Europe/London',
   default_schedule_time time NOT NULL DEFAULT '09:00',
+  brand_pack_id uuid NULL,
   archived_at timestamptz NULL,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
@@ -47,6 +48,18 @@ CREATE TABLE publisher_posts (
   governance_score int NOT NULL DEFAULT 0,
   governance_refusals jsonb NOT NULL DEFAULT '[]'::jsonb,
   governance_unlock_path text NULL,
+  -- Phase 1: Platform-safe media detection
+  visual_handling text NOT NULL DEFAULT 'single'
+    CHECK (visual_handling IN ('single', 'variants')),
+  media_aspect_ratio numeric NULL,
+  media_risk_by_platform jsonb NOT NULL DEFAULT '{}'::jsonb,
+  -- Phase 2: Visual variant generation
+  visual_variants jsonb NOT NULL DEFAULT '[]'::jsonb,
+  visual_variant_mode text NOT NULL DEFAULT 'auto'
+    CHECK (visual_variant_mode IN ('auto', 'ai')),
+  variant_generation_status text NOT NULL DEFAULT 'idle'
+    CHECK (variant_generation_status IN ('idle', 'generating', 'partial', 'ready', 'failed')),
+  variant_last_generated_at timestamptz NULL,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
@@ -96,6 +109,31 @@ CREATE TABLE publisher_governance_events (
 CREATE INDEX idx_governance_events_channel_id ON publisher_governance_events(channel_id);
 CREATE INDEX idx_governance_events_post_id ON publisher_governance_events(post_id);
 CREATE INDEX idx_governance_events_type ON publisher_governance_events(event_type);
+
+------------------------------------------------------------
+-- 5) BRAND PACKS
+------------------------------------------------------------
+CREATE TABLE brand_packs (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "channelId" uuid NOT NULL REFERENCES publisher_channels(id) ON DELETE CASCADE,
+  identity jsonb NOT NULL DEFAULT '{}'::jsonb,
+  "languageRules" jsonb NOT NULL DEFAULT '{}'::jsonb,
+  "visualRules" jsonb NOT NULL DEFAULT '{}'::jsonb,
+  "aiPromptAnchors" jsonb NOT NULL DEFAULT '{}'::jsonb,
+  "governanceOverrides" jsonb NOT NULL DEFAULT '{}'::jsonb,
+  examples jsonb NULL,
+  completeness int NOT NULL DEFAULT 0,
+  "createdAt" timestamptz DEFAULT now(),
+  "updatedAt" timestamptz DEFAULT now()
+);
+
+-- One Brand Pack per channel (unique constraint)
+CREATE UNIQUE INDEX idx_brand_packs_channel ON brand_packs("channelId");
+
+-- Add foreign key to publisher_channels
+ALTER TABLE publisher_channels
+ADD CONSTRAINT fk_channels_brand_pack
+FOREIGN KEY (brand_pack_id) REFERENCES brand_packs(id) ON DELETE SET NULL;
 
 ------------------------------------------------------------
 -- TRIGGERS: Auto-update updated_at

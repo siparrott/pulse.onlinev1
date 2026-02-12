@@ -1,0 +1,52 @@
+# Render Blueprint — Pulse.Online
+# Two services: web (Next.js) + worker (background job processor)
+#
+# Deploy with: render blueprint sync
+
+services:
+  # ─── Web Service (Next.js) ─────────────────────────
+  - type: web
+    name: pulse-online-web
+    runtime: node
+    plan: starter
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+
+  # ─── Worker Service (AI Generation Queue) ──────────
+  - type: worker
+    name: pulse-online-worker
+    runtime: node
+    plan: starter
+    buildCommand: npm ci
+    startCommand: npm run worker
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      # Worker-specific tuning
+      - key: WORKER_POLL_INTERVAL_MS
+        value: "2000"
+      - key: OPENAI_IMAGE_CONCURRENCY
+        value: "2"
+      - key: OPENAI_VISION_CONCURRENCY
+        value: "4"
+      - key: AI_KILL_SWITCH
+        value: "false"
+      - key: AI_DAILY_LIMIT
+        value: "500"

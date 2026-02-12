@@ -29,6 +29,15 @@ export const postFormSchema = z.object({
   caption: z.string().min(1, 'Caption is required').max(2200),
   cta: z.string().max(500).optional(),
   hashtags: z.string().max(500).optional(),
+  // Phase 1: Platform-safe media detection
+  visual_handling: z.enum(['single', 'variants']).default('single'),
+  media_aspect_ratio: z.number().nullable().optional(),
+  media_risk_by_platform: z.record(z.enum(['ok', 'warn', 'unknown'])).optional(),
+  // Phase 2: Visual variant generation
+  visual_variants: z.array(z.any()).optional(),
+  visual_variant_mode: z.enum(['auto', 'ai']).default('auto'),
+  variant_generation_status: z.enum(['idle', 'generating', 'partial', 'ready', 'failed']).default('idle'),
+  variant_last_generated_at: z.string().nullable().optional(),
 });
 
 export const postUpdateSchema = postFormSchema.partial().extend({

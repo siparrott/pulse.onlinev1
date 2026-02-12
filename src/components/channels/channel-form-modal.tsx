@@ -1,11 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, Building, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
-import type { PublisherChannel, Platform, GovernanceProfile, ChannelStatus } from '@/lib/types/database';
+import { BrandPackWizard } from './brand-pack-wizard';
+import { fetchBrandPack, saveBrandPack } from '@/lib/storage/brand-packs';
+import type { PublisherChannel, Platform, GovernanceProfile, ChannelStatus, BrandPack } from '@/lib/types/database';
+import type { BrandPackFormInput } from '@/lib/schemas/brand-pack';
 
 interface ChannelFormModalProps {
   isOpen: boolean;
@@ -42,6 +45,7 @@ export function ChannelFormModal({
   onSave,
   channel,
 }: ChannelFormModalProps) {
+  const [tab, setTab] = useState<'details' | 'brand-pack'>('details');
   const [name, setName] = useState('');
   const [productCode, setProductCode] = useState('');
   const [status, setStatus] = useState<ChannelStatus>('private');
@@ -51,6 +55,8 @@ export function ChannelFormModal({
   const [minDaysBetweenPosts, setMinDaysBetweenPosts] = useState('1');
   const [defaultScheduleTime, setDefaultScheduleTime] = useState('09:00');
   const [staticRequiresImage, setStaticRequiresImage] = useState(false);
+  const [brandPack, setBrandPack] = useState<BrandPack | null>(null);
+  const [loadingBrandPack, setLoadingBrandPack] = useState(false);
 
   useEffect(() => {
     if (channel) {
@@ -63,6 +69,13 @@ export function ChannelFormModal({
       setMinDaysBetweenPosts(String(channel.cadence_rules.min_days_between_posts || 1));
       setDefaultScheduleTime(channel.default_schedule_time);
       setStaticRequiresImage(channel.asset_requirements.static_requires_image || false);
+
+      // Load brand pack
+      setLoadingBrandPack(true);
+      fetchBrandPack(channel.id).then((pack) => {
+        setBrandPack(pack);
+        setLoadingBrandPack(false);
+      });
     } else {
       setName('');
       setProductCode('');
@@ -73,6 +86,8 @@ export function ChannelFormModal({
       setMinDaysBetweenPosts('1');
       setDefaultScheduleTime('09:00');
       setStaticRequiresImage(false);
+      setBrandPack(null);
+      setTab('details');
     }
   }, [channel, isOpen]);
 
@@ -105,12 +120,24 @@ export function ChannelFormModal({
     });
   };
 
+  const handleBrandPackComplete = async (data: BrandPackFormInput) => {
+    if (!channel) return;
+    
+    try {
+      const savedPack = await saveBrandPack(channel.id, data, brandPack?.id);
+      setBrandPack(savedPack);
+      setTab('details');
+    } catch (error) {
+      console.error('Failed to save brand pack:', error);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-lg bg-zinc-900 rounded-xl border border-zinc-800 shadow-xl">
+      <div className="relative z-10 w-full max-w-2xl bg-zinc-900 rounded-xl border border-zinc-800 shadow-xl max-h-[90vh] overflow-hidden flex flex-col">
         <div className="flex items-center justify-between p-6 border-b border-zinc-800">
           <h2 className="text-xl font-semibold text-white">
             {channel ? 'Edit Channel' : 'Add New Channel'}
@@ -120,7 +147,45 @@ export function ChannelFormModal({
           </Button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        {channel && (
+          <div className="flex border-b border-zinc-800">
+            <button
+              onClick={() => setTab('details')}
+              className={`flex-1 px-6 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+                tab === 'details'
+                  ? 'text-white border-b-2 border-emerald-600 bg-zinc-800/50'
+                  : 'text-zinc-400 hover:text-zinc-300'
+              }`}
+            >
+              <Building className="h-4 w-4" />
+              Channel Details
+            </button>
+            <button
+              onClick={() => setTab('brand-pack')}
+              className={`flex-1 px-6 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+                tab === 'brand-pack'
+                  ? 'text-white border-b-2 border-emerald-600 bg-zinc-800/50'
+                  : 'text-zinc-400 hover:text-zinc-300'
+              }`}
+            >
+              <Sparkles className="h-4 w-4" />
+              Brand Pack
+              {brandPack && (
+                <span className={`text-xs px-1.5 py-0.5 rounded ${
+                  brandPack.completeness >= 70
+                    ? 'bg-emerald-500/20 text-emerald-400'
+                    : 'bg-amber-500/20 text-amber-400'
+                }`}>
+                  {brandPack.completeness}%
+                </span>
+              )}
+            </button>
+          </div>
+        )}
+
+        <div className="overflow-y-auto flex-1">
+          {tab === 'details' ? (
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <Input
             label="Channel Name"
             value={name}
@@ -223,6 +288,28 @@ export function ChannelFormModal({
             </Button>
           </div>
         </form>
+          ) : (
+            <div className="p-6">
+              {loadingBrandPack ? (
+                <div className="text-center py-12 text-zinc-400">Loading Brand Pack...</div>
+              ) : (
+                <BrandPackWizard
+                  governanceProfile={governanceProfile}
+                  initialData={brandPack ? {
+                    identity: brandPack.identity,
+                    languageRules: brandPack.languageRules,
+                    visualRules: brandPack.visualRules,
+                    aiPromptAnchors: brandPack.aiPromptAnchors,
+                    governanceOverrides: brandPack.governanceOverrides,
+                    examples: brandPack.examples,
+                  } : undefined}
+                  onComplete={handleBrandPackComplete}
+                  onCancel={() => setTab('details')}
+                />
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

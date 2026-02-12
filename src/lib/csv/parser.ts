@@ -27,7 +27,9 @@ const PLATFORM_ALIASES: Record<string, Platform> = {
   insta: 'instagram',
   twitter: 'twitter',
   x: 'twitter',
+  'x thread': 'twitter',
   linkedin: 'linkedin',
+  'linkedin post': 'linkedin',
   li: 'linkedin',
   facebook: 'facebook',
   fb: 'facebook',
@@ -37,6 +39,11 @@ const PLATFORM_ALIASES: Record<string, Platform> = {
   yt: 'youtube',
   pinterest: 'pinterest',
   pin: 'pinterest',
+  blog: 'linkedin',                  // Blog articles map to linkedin as platform
+  'blog article': 'linkedin',
+  'short video': 'youtube',
+  'short video / veo': 'youtube',
+  veo: 'youtube',
 };
 
 export function parseCSV(text: string): CSVRow[] {
@@ -105,13 +112,15 @@ export function suggestMapping(columns: string[]): Partial<ColumnMapping> {
   const mapping: Partial<ColumnMapping> = {};
   
   const patterns: { key: keyof ColumnMapping; patterns: RegExp[] }[] = [
-    { key: 'date', patterns: [/^date$/i, /publish.*date/i, /scheduled/i] },
-    { key: 'platform_targets', patterns: [/^platform/i, /channel/i, /network/i] },
-    { key: 'content_type', patterns: [/^type$/i, /content.*type/i, /format/i] },
-    { key: 'theme', patterns: [/^theme$/i, /topic/i, /category/i] },
-    { key: 'caption', patterns: [/^caption$/i, /^text$/i, /^copy$/i, /^content$/i, /^post$/i] },
-    { key: 'cta', patterns: [/^cta$/i, /call.*action/i, /action/i] },
+    { key: 'date', patterns: [/^date$/i, /publish.*date/i, /scheduled/i, /^day$/i] },
+    { key: 'platform_targets', patterns: [/^platform/i, /^channel$/i, /network/i] },
+    { key: 'content_type', patterns: [/^type$/i, /content.*type/i, /^format$/i] },
+    { key: 'theme', patterns: [/^theme$/i, /^primary theme$/i, /topic/i, /category/i] },
+    { key: 'caption', patterns: [/^caption$/i, /^text$/i, /^copy$/i, /^content$/i, /^post$/i, /^content focus$/i, /^content.focus$/i] },
+    { key: 'cta', patterns: [/^cta$/i, /call.*action/i, /^action$/i] },
     { key: 'hashtags', patterns: [/^hashtag/i, /^tags$/i] },
+    { key: 'week', patterns: [/^week$/i, /^week\s*#?$/i, /^week\s*num/i] },
+    { key: 'notes', patterns: [/^notes/i, /^angle$/i, /^notes\s*\/\s*angle$/i, /^description$/i] },
   ];
   
   for (const { key, patterns: regexPatterns } of patterns) {
@@ -168,8 +177,34 @@ function parseContentType(value: string): ContentType | null {
   return CONTENT_TYPE_ALIASES[normalized] || null;
 }
 
+/**
+ * Maps combined channel/format values like "Short Video / Veo" → content type
+ */
+const CHANNEL_CONTENT_TYPE_MAP: Record<string, ContentType> = {
+  'linkedin post': 'text',
+  'blog article': 'text',
+  'short video': 'reel',
+  'short video / veo': 'reel',
+  'veo': 'reel',
+  'x thread': 'text',
+};
+
+function deriveContentTypeFromChannel(channelValue: string): ContentType | null {
+  const normalized = channelValue.toLowerCase().trim();
+  return CHANNEL_CONTENT_TYPE_MAP[normalized] || null;
+}
+
 function parsePlatforms(value: string): Platform[] {
   const platforms: Platform[] = [];
+
+  // First try matching the entire value (e.g. "LinkedIn Post", "Short Video / Veo")
+  const fullNormalized = value.toLowerCase().trim();
+  const fullMatch = PLATFORM_ALIASES[fullNormalized];
+  if (fullMatch) {
+    return [fullMatch];
+  }
+
+  // Then try splitting by delimiters
   const parts = value.toLowerCase().split(/[,;|&]+/);
   
   for (const part of parts) {
@@ -183,49 +218,130 @@ function parsePlatforms(value: string): Platform[] {
   return platforms;
 }
 
+/**
+ * Parse week number from strings like "Week 1", "Week 12", "W3", "1"
+ */
+function parseWeekNumber(value: string): number | null {
+  const match = value.trim().match(/(?:week\s*)?(\d+)/i);
+  if (match) {
+    const num = parseInt(match[1], 10);
+    if (num >= 1 && num <= 52) return num;
+  }
+  return null;
+}
+
+/**
+ * Calculate a date from a week number, starting from a given start date.
+ * Each week gets a specific day of that week (distributed by row index within the week).
+ */
+function dateFromWeek(weekNum: number, startDate: Date, indexInWeek: number): string {
+  const date = new Date(startDate);
+  // Week 1 starts on startDate, Week 2 starts 7 days later, etc.
+  date.setDate(date.getDate() + (weekNum - 1) * 7 + indexInWeek);
+  return date.toISOString().split('T')[0];
+}
+
 export function validateAndPreview(
   rows: CSVRow[],
   mapping: ColumnMapping,
-  channelId: string
+  channelId: string,
+  importStartDate?: string
 ): ImportPreview {
   const posts: PostFormData[] = [];
   const errors: { row: number; message: string }[] = [];
   let validRows = 0;
   let invalidRows = 0;
+
+  // Determine start date for week-based imports
+  const startDate = importStartDate ? new Date(importStartDate) : new Date();
+
+  // Track how many rows we've seen per week (to spread dates within weeks)
+  const weekRowCounters = new Map<number, number>();
   
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
     const rowNum = i + 2; // 1-indexed + header row
     
     try {
-      // Parse date
+      // ── Parse date (with week-based fallback) ──
+      let date: string | null = null;
+
+      // 1) Try the mapped date column first
       const dateValue = row[mapping.date];
-      const date = parseDate(dateValue);
+      if (dateValue && dateValue.trim()) {
+        date = parseDate(dateValue);
+      }
+
+      // 2) Fall back to week column → generate dates
+      if (!date && mapping.week) {
+        const weekValue = row[mapping.week];
+        if (weekValue) {
+          const weekNum = parseWeekNumber(weekValue);
+          if (weekNum !== null) {
+            const count = weekRowCounters.get(weekNum) || 0;
+            weekRowCounters.set(weekNum, count + 1);
+            date = dateFromWeek(weekNum, startDate, count);
+          }
+        }
+      }
+
       if (!date) {
-        throw new Error(`Invalid date: "${dateValue}"`);
+        throw new Error(`No valid date and no Week column to derive one. Value: "${dateValue || ''}"`);
       }
       
-      // Parse platforms
+      // ── Parse platforms ──
       const platformValue = row[mapping.platform_targets];
       const platforms = parsePlatforms(platformValue);
       if (platforms.length === 0) {
         throw new Error(`No valid platforms: "${platformValue}"`);
       }
       
-      // Parse content type
-      const contentTypeValue = row[mapping.content_type];
-      const contentType = parseContentType(contentTypeValue);
+      // ── Parse content type (with channel-based fallback) ──
+      let contentType: ContentType | null = null;
+
+      // 1) Try the mapped content_type column
+      if (mapping.content_type) {
+        const contentTypeValue = row[mapping.content_type];
+        if (contentTypeValue && contentTypeValue.trim()) {
+          contentType = parseContentType(contentTypeValue);
+        }
+      }
+
+      // 2) Fall back: derive from the platform/channel column value
       if (!contentType) {
-        throw new Error(`Invalid content type: "${contentTypeValue}"`);
+        const platformRawValue = row[mapping.platform_targets];
+        if (platformRawValue) {
+          contentType = deriveContentTypeFromChannel(platformRawValue);
+        }
+      }
+
+      // 3) Final fallback: default to 'static'
+      if (!contentType) {
+        contentType = 'static';
       }
       
-      // Get caption
-      const caption = row[mapping.caption];
-      if (!caption || caption.trim().length === 0) {
-        throw new Error('Caption is empty');
+      // ── Get caption (with auto-generation fallback) ──
+      let caption = '';
+      if (mapping.caption) {
+        caption = (row[mapping.caption] || '').trim();
+      }
+
+      // Auto-generate caption from theme + channel if empty
+      if (!caption) {
+        const theme = mapping.theme ? (row[mapping.theme] || '').trim() : '';
+        const notes = mapping.notes ? (row[mapping.notes] || '').trim() : '';
+        const channelLabel = platformValue || '';
+
+        if (theme) {
+          caption = `[${theme}] ${channelLabel}`;
+          if (notes) caption += ` — ${notes}`;
+        } else {
+          caption = `${channelLabel} post`;
+          if (notes) caption += ` — ${notes}`;
+        }
       }
       
-      // Build post data
+      // ── Build post data ──
       const post: PostFormData = {
         channel_id: channelId,
         date,

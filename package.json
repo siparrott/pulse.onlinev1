@@ -9,7 +9,9 @@
     "lint": "eslint",
     "test": "vitest",
     "test:watch": "vitest --watch",
-    "test:coverage": "vitest --coverage"
+    "test:coverage": "vitest --coverage",
+    "worker": "tsx src/worker/index.ts",
+    "worker:dev": "tsx watch src/worker/index.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.95.3",
@@ -17,6 +19,7 @@
     "date-fns": "^4.1.0",
     "lucide-react": "^0.563.0",
     "next": "16.1.6",
+    "openai": "^6.19.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "tailwind-merge": "^3.4.0",
@@ -35,6 +38,7 @@
     "eslint-config-next": "16.1.6",
     "jsdom": "^28.0.0",
     "tailwindcss": "^4",
+    "tsx": "^4.19.0",
     "typescript": "^5",
     "vitest": "^4.0.18"
   }

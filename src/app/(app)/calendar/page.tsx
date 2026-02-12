@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, RefreshCw, Database, HardDrive } from 'lucide-react';
+import { ChevronLeft, ChevronRight, RefreshCw, Database, HardDrive, ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
@@ -18,8 +18,8 @@ import {
   startOfWeek,
   endOfWeek,
 } from 'date-fns';
-import { fetchPosts, fetchChannels, getStorageMode } from '@/lib/storage/posts';
-import type { PublisherPost, PublisherChannel, PostStatus } from '@/lib/types/database';
+import { fetchPosts, fetchChannels, fetchAllAssets, getStorageMode } from '@/lib/storage/posts';
+import type { PublisherPost, PublisherChannel, PublisherAsset, PostStatus } from '@/lib/types/database';
 
 const STATUS_COLORS: Record<PostStatus, string> = {
   draft: 'bg-zinc-600',
@@ -40,18 +40,33 @@ export default function CalendarPage() {
   const [channelFilter, setChannelFilter] = useState('');
   const [posts, setPosts] = useState<PostWithChannel[]>([]);
   const [channels, setChannels] = useState<PublisherChannel[]>([]);
+  const [allAssets, setAllAssets] = useState<PublisherAsset[]>([]);
   const [loading, setLoading] = useState(true);
   const [storageMode, setStorageMode] = useState<'supabase' | 'local'>('local');
+
+  // Group assets by post_id for fast lookup
+  const assetsByPostId = useMemo(() => {
+    const map = new Map<string, PublisherAsset[]>();
+    for (const asset of allAssets) {
+      if (!asset.post_id) continue;
+      const list = map.get(asset.post_id) || [];
+      list.push(asset);
+      map.set(asset.post_id, list);
+    }
+    return map;
+  }, [allAssets]);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const [loadedPosts, loadedChannels] = await Promise.all([
+      const [loadedPosts, loadedChannels, loadedAssets] = await Promise.all([
         fetchPosts(),
         fetchChannels(),
+        fetchAllAssets(),
       ]);
       setPosts(loadedPosts);
       setChannels(loadedChannels);
+      setAllAssets(loadedAssets);
       setStorageMode(getStorageMode());
     } catch (error) {
       console.error('Error loading data:', error);
@@ -201,16 +216,39 @@ export default function CalendarPage() {
                 </div>
 
                 <div className="space-y-1">
-                  {dayPosts.slice(0, 3).map((post) => (
-                    <a
-                      key={post.id}
-                      href={`/composer/${post.id}`}
-                      className={`block text-xs p-1.5 rounded truncate ${STATUS_COLORS[post.status]} text-white hover:opacity-80 transition-opacity`}
-                    >
-                      <span className="font-medium">{post.channel_code || 'post'}</span>
-                      <span className="opacity-75 ml-1">{post.content_type}</span>
-                    </a>
-                  ))}
+                  {dayPosts.slice(0, 3).map((post) => {
+                    const postAssets = assetsByPostId.get(post.id) || [];
+                    const firstImage = postAssets.find((a) => a.mime_type?.startsWith('image/'));
+
+                    return (
+                      <a
+                        key={post.id}
+                        href={`/composer/${post.id}`}
+                        className={`group relative flex items-center gap-1.5 text-xs p-1 rounded ${STATUS_COLORS[post.status]} text-white hover:opacity-80 transition-opacity`}
+                      >
+                        {firstImage ? (
+                          <img
+                            src={firstImage.storage_path}
+                            alt=""
+                            className="w-6 h-6 rounded-sm object-cover shrink-0 ring-1 ring-white/20"
+                          />
+                        ) : (
+                          <span className="w-6 h-6 rounded-sm shrink-0 flex items-center justify-center bg-black/20">
+                            <ImageIcon className="w-3.5 h-3.5 opacity-40" />
+                          </span>
+                        )}
+                        <span className="truncate">
+                          <span className="font-medium">{post.channel_code || 'post'}</span>
+                          <span className="opacity-75 ml-1">{post.content_type}</span>
+                        </span>
+                        {postAssets.length > 1 && (
+                          <span className="ml-auto shrink-0 text-[10px] bg-black/30 rounded px-1">
+                            +{postAssets.length - 1}
+                          </span>
+                        )}
+                      </a>
+                    );
+                  })}
                   {dayPosts.length > 3 && (
                     <div className="text-xs text-zinc-500 pl-1">
                       +{dayPosts.length - 3} more
