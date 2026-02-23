@@ -7,6 +7,7 @@ export type PostStatus = 'draft' | 'validated' | 'needs_edits' | 'blocked' | 'sc
 export type GovernanceStatus = 'unreviewed' | 'allowed' | 'allowed_with_edits' | 'blocked';
 export type AssetRole = 'proof' | 'decorative' | 'educational' | 'ui';
 export type AssetQualityStatus = 'unreviewed' | 'ok' | 'warning' | 'blocked';
+export type VariantStrategy = 'single_image' | 'platform_safe';
 
 export type Platform = 'instagram' | 'twitter' | 'linkedin' | 'facebook' | 'tiktok' | 'youtube' | 'pinterest';
 
@@ -162,6 +163,10 @@ export interface PublisherPost {
   visual_variant_mode: 'auto' | 'ai';
   variant_generation_status: 'idle' | 'generating' | 'partial' | 'ready' | 'failed';
   variant_last_generated_at: string | null;
+  // Phase 4: Deterministic variant builder
+  source_image?: SourceImage | null;
+  selected_platforms?: string[];    // PlatformSpecId[]
+  variant_strategy?: VariantStrategy;
   created_at: string;
   updated_at: string;
   // Joined data
@@ -225,6 +230,52 @@ export interface PostFormData {
 // CSV Import types
 export interface CSVRow {
   [key: string]: string;
+}
+
+// ── Phase 4: Deterministic Variant Builder ────────────────────
+
+/** Metadata about the uploaded source image for a post */
+export interface SourceImage {
+  storageKey: string;
+  width: number;
+  height: number;
+  format: string;
+  bytes: number;
+}
+
+/** A single deterministic variant produced by the Variant Builder */
+export interface PostVariant {
+  id: string;
+  postId: string;
+  platformId: string;       // PlatformSpecId
+  storageKey: string;
+  publicUrl?: string;
+  width: number;
+  height: number;
+  format: string;
+  bytes: number;
+  upscaleWarning: boolean;  // true when source smaller than target
+  createdAt: string;
+}
+
+/** Build result returned from the variant builder */
+export interface VariantBuildResult {
+  platformId: string;
+  buffer: Buffer;
+  width: number;
+  height: number;
+  format: string;
+  bytes: number;
+  upscaleWarning: boolean;
+}
+
+/** Build log entry for observability */
+export interface VariantBuildLog {
+  postId: string;
+  count: number;
+  durationMs: number;
+  errors: string[];
+  createdAt: string;
 }
 
 export interface ColumnMapping {

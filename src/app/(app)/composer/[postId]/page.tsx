@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Upload, Trash2, Save, Play, CheckCircle, XCircle, AlertTriangle, Sparkles } from 'lucide-react';
+import { ArrowLeft, Upload, Trash2, Save, Play, CheckCircle, XCircle, AlertTriangle, Sparkles, Download, Package, Image as ImageIcon } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,7 +22,8 @@ import { ENABLE_AI_VARIANTS } from '@/lib/config/feature-flags';
 import { fetchBrandPack } from '@/lib/storage/brand-packs';
 import { composeImagePrompt, validateBrandPackForAI } from '@/lib/ai/prompt-composer';
 import { logAIPromptComposed, logAIImageGenerated, logAIImageBlockedBrandViolation } from '@/lib/utils/brand-pack-audit';
-import type { PublisherPost, PublisherAsset, AssetRole, GovernanceStatus, PublisherChannel, Platform, ContentType, VisualVariant } from '@/lib/types/database';
+import type { PublisherPost, PublisherAsset, AssetRole, GovernanceStatus, PublisherChannel, Platform, ContentType, VisualVariant, PostVariant, SourceImage } from '@/lib/types/database';
+import { allSpecs, platformToSpecId, type PlatformSpecId } from '@/lib/platforms/specs';
 
 const ASSET_ROLE_OPTIONS = [
   { value: 'decorative', label: 'Decorative' },
@@ -64,6 +65,10 @@ const EMPTY_POST: PublisherPost & { channel_name: string } = {
   visual_variant_mode: 'auto',
   variant_generation_status: 'idle',
   variant_last_generated_at: null,
+  // Phase 4: Deterministic variant builder
+  source_image: null,
+  selected_platforms: [],
+  variant_strategy: 'single_image',
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
 };
@@ -90,6 +95,13 @@ export default function ComposerPage() {
   const [aiGeneratedVariants, setAiGeneratedVariants] = useState<VisualVariant[]>([]);
   const aiPreviewRef = useRef<HTMLDivElement>(null);
 
+  // Phase 4: Deterministic variant builder state
+  const [builtVariants, setBuiltVariants] = useState<PostVariant[]>([]);
+  const [buildingVariants, setBuildingVariants] = useState(false);
+  const [buildError, setBuildError] = useState<string | null>(null);
+  const [selectedSpecIds, setSelectedSpecIds] = useState<PlatformSpecId[]>([]);
+  const variantGridRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     async function loadPost() {
       setLoading(true);
@@ -113,8 +125,31 @@ export default function ComposerPage() {
             visual_variant_mode: loaded.visual_variant_mode || 'auto',
             variant_generation_status: loaded.variant_generation_status || 'idle',
             variant_last_generated_at: loaded.variant_last_generated_at || null,
+            // Phase 4 defaults
+            source_image: loaded.source_image || null,
+            selected_platforms: loaded.selected_platforms || [],
+            variant_strategy: loaded.variant_strategy || 'single_image',
           });
           setAssets(loadedAssets);
+
+          // Phase 4: auto-select platform specs from post targets
+          const autoSpecs: PlatformSpecId[] = [];
+          for (const p of loaded.platform_targets || []) {
+            const specId = platformToSpecId(p as string, loaded.content_type);
+            if (specId && !autoSpecs.includes(specId)) autoSpecs.push(specId);
+          }
+          setSelectedSpecIds(autoSpecs);
+
+          // Phase 4: load persisted variants
+          if (loaded.variant_strategy === 'platform_safe') {
+            try {
+              const res = await fetch(`/api/posts/${postId}/variants`);
+              if (res.ok) {
+                const data = await res.json();
+                if (data.variants?.length) setBuiltVariants(data.variants);
+              }
+            } catch { /* ignore */ }
+          }
         } else {
           setNotFound(true);
         }
@@ -590,6 +625,153 @@ export default function ComposerPage() {
       ...prev,
       visual_variants: prev.visual_variants.filter((v) => v.id !== variantId),
     }));
+  };
+
+  // ── Phase 4: Deterministic Variant Builder ──────────────────
+
+  /** Upload source image to Supabase Storage and set source_image metadata */
+  const handleSourceImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Read dimensions client-side
+    const dataUrl = await new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.readAsDataURL(file);
+    });
+    const img = await new Promise<HTMLImageElement>((resolve) => {
+      const i = new window.Image();
+      i.onload = () => resolve(i);
+      i.src = dataUrl;
+    });
+
+    // Upload via API route (server-side Supabase Storage)
+    const storagePath = `posts/${post.id}/source/${file.name}`;
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('path', storagePath);
+
+      const res = await fetch('/api/upload-source', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Upload failed');
+      }
+
+      const sourceImage: SourceImage = {
+        storageKey: storagePath,
+        width: img.naturalWidth,
+        height: img.naturalHeight,
+        format: file.type.split('/')[1] || 'unknown',
+        bytes: file.size,
+      };
+
+      setPost((prev) => ({
+        ...prev,
+        source_image: sourceImage,
+        variant_strategy: 'platform_safe',
+      }));
+
+      // Also analyze aspect ratio for Phase 1 safety report
+      const ar = img.naturalWidth / img.naturalHeight;
+      const risks = analyzePlatformRisks(ar, post.platform_targets, post.content_type);
+      setPost((prev) => ({
+        ...prev,
+        media_aspect_ratio: ar,
+        media_risk_by_platform: risks,
+      }));
+    } catch (err) {
+      console.error('Source image upload failed:', err);
+      alert('Failed to upload source image.');
+    }
+  };
+
+  /** Toggle a platform spec on/off */
+  const toggleSpec = (specId: PlatformSpecId) => {
+    setSelectedSpecIds((prev) =>
+      prev.includes(specId)
+        ? prev.filter((s) => s !== specId)
+        : [...prev, specId]
+    );
+  };
+
+  /** Build deterministic variants via the server API */
+  const handleBuildVariants = async () => {
+    if (!post.source_image?.storageKey) {
+      alert('Please upload a source image first');
+      return;
+    }
+    if (selectedSpecIds.length === 0) {
+      alert('Please select at least one platform');
+      return;
+    }
+
+    setBuildingVariants(true);
+    setBuildError(null);
+
+    try {
+      const res = await fetch(`/api/posts/${post.id}/build-variants`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          variant_strategy: 'platform_safe',
+          selected_platforms: selectedSpecIds,
+          source_image: post.source_image,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || 'Build failed');
+      }
+
+      setBuiltVariants(data.variants);
+      setPost((prev) => ({
+        ...prev,
+        variant_strategy: 'platform_safe',
+        selected_platforms: selectedSpecIds,
+        variant_generation_status: 'ready',
+        variant_last_generated_at: new Date().toISOString(),
+      }));
+
+      // Scroll to variant grid
+      setTimeout(() => {
+        variantGridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 200);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      setBuildError(msg);
+      console.error('[build-variants]', err);
+    } finally {
+      setBuildingVariants(false);
+    }
+  };
+
+  /** Download ZIP of all built variants */
+  const handleExportZip = async () => {
+    try {
+      const res = await fetch(`/api/posts/${post.id}/export-variants`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Export failed');
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `variants_${post.id.slice(0, 8)}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('[export-zip]', err);
+      alert('Failed to export ZIP.');
+    }
   };
 
   const handleSave = async () => {
@@ -1367,6 +1549,173 @@ export default function ComposerPage() {
                 </div>
               </CardContent>
             </Card>
+          )}
+
+          {/* ── Phase 4: Deterministic Variant Builder ───────────── */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                Platform-Safe Variant Builder
+                <Badge variant="default" className="text-xs">Phase 4</Badge>
+              </CardTitle>
+              <CardDescription>
+                Upload a source image, select platforms, and build pixel-perfect variants. No AI — deterministic crop/resize only.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Source image upload */}
+              <div>
+                <label className="block text-xs font-medium text-zinc-400 mb-1.5">
+                  Source Image
+                </label>
+                {post.source_image ? (
+                  <div className="flex items-center justify-between bg-zinc-800 rounded-lg p-3">
+                    <div className="flex items-center gap-3">
+                      <ImageIcon className="h-5 w-5 text-emerald-400" />
+                      <div>
+                        <p className="text-sm text-zinc-200">{post.source_image.storageKey.split('/').pop()}</p>
+                        <p className="text-xs text-zinc-500">{post.source_image.width}×{post.source_image.height} · {post.source_image.format} · {(post.source_image.bytes / 1024).toFixed(0)} KB</p>
+                      </div>
+                    </div>
+                    <label className="cursor-pointer text-xs text-zinc-400 hover:text-white">
+                      Replace
+                      <input type="file" accept="image/*" className="hidden" onChange={handleSourceImageUpload} />
+                    </label>
+                  </div>
+                ) : (
+                  <label className="flex items-center justify-center gap-2 py-6 border-2 border-dashed border-zinc-700 rounded-lg cursor-pointer hover:border-zinc-500 transition-colors">
+                    <Upload className="h-5 w-5 text-zinc-500" />
+                    <span className="text-sm text-zinc-400">Upload source image</span>
+                    <input type="file" accept="image/*" className="hidden" onChange={handleSourceImageUpload} />
+                  </label>
+                )}
+              </div>
+
+              {/* Platform spec selection */}
+              <div>
+                <label className="block text-xs font-medium text-zinc-400 mb-1.5">
+                  Target Platforms ({selectedSpecIds.length} selected)
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {allSpecs().map((spec) => (
+                    <button
+                      key={spec.id}
+                      type="button"
+                      onClick={() => toggleSpec(spec.id)}
+                      className={`flex items-center justify-between px-3 py-2 text-left rounded-lg border text-xs transition-colors ${
+                        selectedSpecIds.includes(spec.id)
+                          ? 'bg-emerald-600/10 border-emerald-600 text-white'
+                          : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:border-zinc-600'
+                      }`}
+                    >
+                      <span>{spec.label}</span>
+                      <span className="text-zinc-500">{spec.width}×{spec.height}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Build button */}
+              <Button
+                onClick={handleBuildVariants}
+                disabled={buildingVariants || !post.source_image || selectedSpecIds.length === 0}
+                className="w-full"
+              >
+                {buildingVariants ? (
+                  <>
+                    <Sparkles className="h-4 w-4 mr-2 animate-spin" />
+                    Building {selectedSpecIds.length} variant{selectedSpecIds.length !== 1 ? 's' : ''}...
+                  </>
+                ) : builtVariants.length > 0 ? (
+                  <>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Rebuild Variants
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Build Platform-Safe Visuals
+                  </>
+                )}
+              </Button>
+
+              {/* Build error */}
+              {buildError && (
+                <div className="text-xs text-red-400 bg-red-500/10 p-2 rounded">
+                  ✗ {buildError}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Phase 4: Built Variants Grid */}
+          {builtVariants.length > 0 && (
+            <div ref={variantGridRef}>
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>{builtVariants.length} Built Variant{builtVariants.length !== 1 ? 's' : ''}</CardTitle>
+                    <CardDescription>Deterministic crop/resize — ready to download</CardDescription>
+                  </div>
+                  <Button variant="secondary" size="sm" onClick={handleExportZip}>
+                    <Download className="h-4 w-4 mr-1.5" />
+                    Download Pack (.zip)
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-3">
+                  {builtVariants.map((v) => (
+                    <div key={v.id} className="bg-zinc-800 rounded-lg overflow-hidden">
+                      {/* Preview */}
+                      {v.publicUrl && (
+                        <img
+                          src={v.publicUrl}
+                          alt={v.platformId}
+                          className="w-full h-32 object-cover"
+                        />
+                      )}
+                      {!v.publicUrl && (
+                        <div className="w-full h-32 flex items-center justify-center bg-zinc-900 text-zinc-600">
+                          <ImageIcon className="h-8 w-8" />
+                        </div>
+                      )}
+                      {/* Info */}
+                      <div className="p-2">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-medium text-zinc-200">
+                            {v.platformId.replace(/_/g, ' ')}
+                          </span>
+                          <Badge variant="default" className="text-[10px]">crop</Badge>
+                        </div>
+                        <div className="text-[11px] text-zinc-500">
+                          {v.width}×{v.height} · {v.format} · {(v.bytes / 1024).toFixed(0)} KB
+                        </div>
+                        {v.upscaleWarning && (
+                          <div className="text-[10px] text-amber-400 mt-1 flex items-center gap-1">
+                            <AlertTriangle className="h-3 w-3" />
+                            Source smaller than target
+                          </div>
+                        )}
+                        {/* Download individual */}
+                        {v.publicUrl && (
+                          <a
+                            href={v.publicUrl}
+                            download
+                            className="block mt-2 text-center text-[11px] text-emerald-400 hover:text-emerald-300"
+                          >
+                            Download
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+            </div>
           )}
         </div>
 
