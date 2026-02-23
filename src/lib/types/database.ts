@@ -347,6 +347,66 @@ export interface JobRunLog {
   error: string | null;
 }
 
+// ── Phase 6: Engagement Ingestion ─────────────────────────
+
+/** Normalized metrics stored in EngagementSnapshot.metrics jsonb */
+export interface NormalizedMetrics {
+  likes: number | null;
+  comments: number | null;
+  shares: number | null;
+  saves: number | null;
+  views: number | null;
+  impressions: number | null;
+  reach: number | null;
+  clicks: number | null;
+  profileVisits: number | null;
+  follows: number | null;
+  engagementRate: number | null;
+  currency: null;
+  notes: string | null;
+}
+
+export type EngagementEventType = 'spike' | 'milestone' | 'comment' | 'error';
+
+export interface EngagementSnapshot {
+  id: string;
+  user_id: string;
+  platform_id: string;
+  connection_id: string;
+  post_delivery_id: string;
+  platform_post_id: string;
+  captured_at: string;
+  metrics: NormalizedMetrics;
+  raw: Record<string, unknown>;
+  ok: boolean;
+  error: string | null;
+  created_at: string;
+}
+
+export interface EngagementRollup {
+  id: string;
+  user_id: string;
+  post_delivery_id: string;
+  platform_id: string;
+  last_captured_at: string | null;
+  totals: NormalizedMetrics;
+  deltas_24h: Partial<NormalizedMetrics>;
+  updated_at: string;
+  // Joined data
+  delivery?: PostDelivery;
+}
+
+export interface UserEngagementEvent {
+  id: string;
+  user_id: string;
+  type: EngagementEventType;
+  post_delivery_id: string | null;
+  platform_id: string | null;
+  occurred_at: string;
+  payload: Record<string, unknown>;
+  created_at: string;
+}
+
 export interface ColumnMapping {
   date: string;
   platform_targets: string;

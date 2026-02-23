@@ -11,6 +11,8 @@ import {
   Radio,
   ImagePlus,
   Send,
+  BarChart3,
+  Mail,
 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
@@ -22,6 +24,8 @@ const navItems = [
   { href: '/calendar', label: 'Calendar', icon: Calendar },
   { href: '/assets', label: 'Assets', icon: ImagePlus },
   { href: '/publishing', label: 'Publishing', icon: Send },
+  { href: '/analytics', label: 'Analytics', icon: BarChart3 },
+  { href: '/digests', label: 'Digests', icon: Mail },
 ];
 
 export function Navigation() {
