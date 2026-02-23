@@ -1,5 +1,5 @@
 /**
- * Phase 4: GET /api/posts/:postId/export-variants.zip
+ * Phase 4: GET /api/posts/:id/export-variants.zip
  *
  * Streams a ZIP archive containing all built variants
  * plus a manifest.json at root.
@@ -8,13 +8,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import archiver from 'archiver';
 import { createServerClient, isSupabaseConfigured } from '@/lib/supabase/client';
-import { Readable } from 'stream';
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: Promise<{ postId: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { postId } = await params;
+  const { id: postId } = await params;
 
   try {
     if (!isSupabaseConfigured()) {

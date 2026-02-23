@@ -1,5 +1,5 @@
 /**
- * Phase 4: POST /api/posts/:postId/build-variants
+ * Phase 4: POST /api/posts/:id/build-variants
  *
  * Triggers deterministic variant generation using Sharp.
  * Validates preconditions, runs the builder, saves to storage + DB.
@@ -13,9 +13,9 @@ import type { PlatformSpecId } from '@/lib/platforms/specs';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ postId: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { postId } = await params;
+  const { id: postId } = await params;
 
   try {
     // ── 1. Validate post exists ─────────────────────────────

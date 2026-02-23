@@ -1,5 +1,5 @@
 /**
- * Phase 4: GET /api/posts/:postId/variants
+ * Phase 4: GET /api/posts/:id/variants
  *
  * Returns persisted variant metadata with refreshed signed URLs.
  */
@@ -9,9 +9,9 @@ import { fetchVariants } from '@/lib/storage/saveVariant';
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: Promise<{ postId: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { postId } = await params;
+  const { id: postId } = await params;
 
   try {
     const variants = await fetchVariants(postId);
