@@ -13,6 +13,7 @@ import {
   Send,
   BarChart3,
   Mail,
+  Zap,
 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
@@ -26,6 +27,7 @@ const navItems = [
   { href: '/publishing', label: 'Publishing', icon: Send },
   { href: '/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/digests', label: 'Digests', icon: Mail },
+  { href: '/automations', label: 'Automations', icon: Zap },
 ];
 
 export function Navigation() {

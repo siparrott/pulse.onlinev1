@@ -426,3 +426,106 @@ export interface ImportPreview {
   errors: { row: number; message: string }[];
   posts: PostFormData[];
 }
+
+// ── Phase 7: Automation Layer ─────────────────────────────
+
+export type AutomationScope = 'all_posts' | 'tagged_posts' | 'single_post';
+export type AutomationActionStatus = 'queued' | 'approved' | 'executing' | 'done' | 'failed' | 'skipped' | 'blocked';
+export type AutomationApprovalStatus = 'pending' | 'approved' | 'rejected';
+export type AutomationActionType = 'schedule_repost' | 'schedule_crosspost' | 'notify' | 'queue_comment_reply_suggestion';
+export type ConditionWhen = 'after_publish' | 'daily_digest_time' | 'metric_spike';
+export type MetricOp = '<' | '<=' | '>' | '>=' | '==';
+
+export interface MetricCondition {
+  field: string;
+  op: MetricOp;
+  value: number;
+}
+
+export interface ConditionWindow {
+  hoursSincePublishMin: number;
+  hoursSincePublishMax: number;
+}
+
+export interface RuleConditions {
+  when: ConditionWhen;
+  window?: ConditionWindow;
+  metrics?: MetricCondition[];
+  platform?: string;
+}
+
+export interface RuleActionDef {
+  type: AutomationActionType;
+  delayHours?: number;
+  captionAppend?: string;
+  useSameMedia?: boolean;
+  target?: string;
+  message?: string;
+  tone?: string;
+  maxSuggestions?: number;
+}
+
+export interface RuleConstraints {
+  maxActionsPerDay?: number;
+  cooldownHoursPerPost?: number;
+  quietHours?: { start: string; end: string; timezone: string };
+  maxRepostsPerOriginal?: number;
+}
+
+export interface AutomationRule {
+  id: string;
+  user_id: string;
+  name: string;
+  is_enabled: boolean;
+  platform_id: string;
+  scope: AutomationScope;
+  scope_ref_id: string | null;
+  conditions: RuleConditions;
+  actions: RuleActionDef[];
+  constraints: RuleConstraints;
+  requires_approval: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AutomationRun {
+  id: string;
+  user_id: string;
+  rule_id: string;
+  started_at: string;
+  finished_at: string | null;
+  ok: boolean;
+  summary: Record<string, unknown>;
+  error: string | null;
+}
+
+export interface AutomationActionLog {
+  id: string;
+  user_id: string;
+  rule_id: string;
+  post_schedule_id: string | null;
+  post_delivery_id: string | null;
+  platform_id: string;
+  action_type: string;
+  status: AutomationActionStatus;
+  reason: string | null;
+  payload: Record<string, unknown>;
+  external_action_id: string | null;
+  attempts: number;
+  next_retry_at: string | null;
+  created_at: string;
+  updated_at: string;
+  // Joined
+  rule?: AutomationRule;
+  approval?: AutomationApproval;
+}
+
+export interface AutomationApproval {
+  id: string;
+  action_log_id: string;
+  user_id: string;
+  status: AutomationApprovalStatus;
+  decided_at: string | null;
+  note: string | null;
+  created_at: string;
+}
