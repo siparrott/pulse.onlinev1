@@ -319,6 +319,8 @@ export async function updatePost(id: string, updates: Partial<PublisherPost>): P
     'media_aspect_ratio', 'media_risk_by_platform', 'visual_variants',
     'visual_variant_mode', 'variant_generation_status', 'variant_last_generated_at',
     'visual_handling', 'channel_name', 'channel_code',
+    // Phase 4: stored locally; build-variants API gets them from request body
+    'source_image', 'selected_platforms', 'variant_strategy',
   ];
 
   if (isSupabaseConfigured()) {
@@ -385,6 +387,10 @@ function savePostToLocalStorage(id: string, updates: Partial<PublisherPost>): Po
       visual_variant_mode: 'auto',
       variant_generation_status: 'idle',
       variant_last_generated_at: null,
+      // Phase 4 defaults
+      source_image: null,
+      selected_platforms: [],
+      variant_strategy: 'single_image',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       ...updates,

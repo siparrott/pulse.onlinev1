@@ -646,8 +646,18 @@ export default function ComposerPage() {
       i.src = dataUrl;
     });
 
-    // Upload via API route (server-side Supabase Storage)
     const storagePath = `posts/${post.id}/source/${file.name}`;
+
+    // Build source_image metadata
+    const sourceImage: SourceImage = {
+      storageKey: storagePath,
+      width: img.naturalWidth,
+      height: img.naturalHeight,
+      format: file.type.split('/')[1] || 'unknown',
+      bytes: file.size,
+    };
+
+    // Try uploading to Supabase Storage via server route
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -660,35 +670,27 @@ export default function ComposerPage() {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || 'Upload failed');
+        console.warn('Server upload failed, metadata saved locally:', err.error);
       }
-
-      const sourceImage: SourceImage = {
-        storageKey: storagePath,
-        width: img.naturalWidth,
-        height: img.naturalHeight,
-        format: file.type.split('/')[1] || 'unknown',
-        bytes: file.size,
-      };
-
-      setPost((prev) => ({
-        ...prev,
-        source_image: sourceImage,
-        variant_strategy: 'platform_safe',
-      }));
-
-      // Also analyze aspect ratio for Phase 1 safety report
-      const ar = img.naturalWidth / img.naturalHeight;
-      const risks = analyzePlatformRisks(ar, post.platform_targets, post.content_type);
-      setPost((prev) => ({
-        ...prev,
-        media_aspect_ratio: ar,
-        media_risk_by_platform: risks,
-      }));
     } catch (err) {
-      console.error('Source image upload failed:', err);
-      alert('Failed to upload source image.');
+      console.warn('Server upload unavailable, metadata saved locally:', err);
     }
+
+    // Always update local state (persists via handleSave → updatePostStorage)
+    setPost((prev) => ({
+      ...prev,
+      source_image: sourceImage,
+      variant_strategy: 'platform_safe',
+    }));
+
+    // Also analyze aspect ratio for Phase 1 safety report
+    const ar = img.naturalWidth / img.naturalHeight;
+    const risks = analyzePlatformRisks(ar, post.platform_targets, post.content_type);
+    setPost((prev) => ({
+      ...prev,
+      media_aspect_ratio: ar,
+      media_risk_by_platform: risks,
+    }));
   };
 
   /** Toggle a platform spec on/off */
@@ -808,6 +810,10 @@ export default function ComposerPage() {
         visual_variant_mode: post.visual_variant_mode,
         variant_generation_status: post.variant_generation_status,
         variant_last_generated_at: post.variant_last_generated_at,
+        // Phase 4: deterministic variant builder
+        source_image: post.source_image,
+        selected_platforms: post.selected_platforms,
+        variant_strategy: post.variant_strategy,
       });
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2000);
