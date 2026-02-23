@@ -114,6 +114,7 @@ export default function AutomationsActivityPage() {
                 <th className="py-2 px-3">Reason</th>
                 <th className="py-2 px-3">Attempts</th>
                 <th className="py-2 px-3">Created</th>
+                <th className="py-2 px-3">Updated</th>
                 <th className="py-2 px-3">Links</th>
               </tr>
             </thead>
@@ -146,15 +147,20 @@ export default function AutomationsActivityPage() {
                     <td className="py-2 px-3 text-zinc-500 text-xs whitespace-nowrap">
                       {new Date(log.created_at).toLocaleString()}
                     </td>
+                    <td className="py-2 px-3 text-zinc-500 text-xs whitespace-nowrap">
+                      {log.updated_at && log.updated_at !== log.created_at
+                        ? new Date(log.updated_at).toLocaleString()
+                        : '—'}
+                    </td>
                     <td className="py-2 px-3">
-                      {log.external_action_id && (
+                      {(log.external_action_id || log.post_schedule_id) ? (
                         <Link
                           href={`/publishing`}
                           className="text-emerald-500 hover:text-emerald-400 flex items-center gap-1 text-xs"
                         >
-                          Schedule <ChevronRight className="h-3 w-3" />
+                          View <ChevronRight className="h-3 w-3" />
                         </Link>
-                      )}
+                      ) : null}
                     </td>
                   </tr>
                 );

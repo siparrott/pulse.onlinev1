@@ -81,6 +81,9 @@ CREATE TABLE IF NOT EXISTS automation_approvals (
   created_at    TIMESTAMPTZ DEFAULT now()
 );
 
+CREATE INDEX IF NOT EXISTS idx_automation_runs_rule
+  ON automation_runs(rule_id, started_at DESC);
+
 ------------------------------------------------------------
 -- 5) TRIGGERS for updated_at
 ------------------------------------------------------------

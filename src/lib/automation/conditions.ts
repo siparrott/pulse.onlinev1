@@ -50,7 +50,8 @@ export function evaluateConditions(
     if (conditions.metrics?.length) {
       const result = evaluateMetricConditions(
         conditions.metrics,
-        ctx.rollup.deltas_24h as NormalizedMetrics
+        ctx.rollup.deltas_24h as NormalizedMetrics,
+        conditions.logic ?? 'or'
       );
       return result;
     }
@@ -89,7 +90,8 @@ export function evaluateConditions(
       }
       return evaluateMetricConditions(
         conditions.metrics,
-        ctx.rollup.totals as NormalizedMetrics
+        ctx.rollup.totals as NormalizedMetrics,
+        conditions.logic ?? 'or'
       );
     }
 
@@ -101,11 +103,13 @@ export function evaluateConditions(
 }
 
 /**
- * Evaluate metric conditions. Conditions are ORed (any one match triggers).
+ * Evaluate metric conditions.
+ * Logic mode: 'or' (default) = any one match triggers; 'and' = all must match.
  */
 function evaluateMetricConditions(
   metricConditions: MetricCondition[],
-  metrics: NormalizedMetrics
+  metrics: NormalizedMetrics,
+  logic: 'and' | 'or' = 'or'
 ): ConditionResult {
   const matchReasons: string[] = [];
   const failReasons: string[] = [];
@@ -125,12 +129,20 @@ function evaluateMetricConditions(
     }
   }
 
-  // OR logic: at least one condition must match
-  if (matchReasons.length > 0) {
-    return { ok: true, reason: `Conditions met: ${matchReasons.join('; ')}` };
+  if (logic === 'and') {
+    // AND: all conditions must pass (no failures allowed)
+    if (failReasons.length === 0 && matchReasons.length > 0) {
+      return { ok: true, reason: `All conditions met (AND): ${matchReasons.join('; ')}` };
+    }
+    return { ok: false, reason: `Not all conditions met (AND): ${failReasons.join('; ')}` };
   }
 
-  return { ok: false, reason: `No conditions met: ${failReasons.join('; ')}` };
+  // OR: at least one condition must match
+  if (matchReasons.length > 0) {
+    return { ok: true, reason: `Conditions met (OR): ${matchReasons.join('; ')}` };
+  }
+
+  return { ok: false, reason: `No conditions met (OR): ${failReasons.join('; ')}` };
 }
 
 function getMetricValue(metrics: NormalizedMetrics, field: string): number | null {

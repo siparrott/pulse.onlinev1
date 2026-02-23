@@ -451,6 +451,7 @@ export interface RuleConditions {
   when: ConditionWhen;
   window?: ConditionWindow;
   metrics?: MetricCondition[];
+  logic?: 'and' | 'or';  // default 'or'
   platform?: string;
 }
 

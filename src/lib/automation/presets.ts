@@ -90,6 +90,7 @@ export const META_PRESETS: AutomationPreset[] = [
         { field: 'reach', op: '<', value: 100 },
         { field: 'likes', op: '<', value: 3 },
       ],
+      logic: 'and',
       platform: 'facebook',
     },
     actions: [
