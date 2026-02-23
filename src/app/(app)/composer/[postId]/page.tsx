@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Upload, Trash2, Save, Play, CheckCircle, XCircle, AlertTriangle, Sparkles, Download, Package, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Upload, Trash2, Save, Play, CheckCircle, XCircle, AlertTriangle, Sparkles, Download, Package, Image as ImageIcon, Clock, Send, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -102,6 +102,16 @@ export default function ComposerPage() {
   const [selectedSpecIds, setSelectedSpecIds] = useState<PlatformSpecId[]>([]);
   const variantGridRef = useRef<HTMLDivElement>(null);
 
+  // Phase 5: Scheduling state
+  const [connections, setConnections] = useState<Array<{ id: string; platform_id: string; account_label: string; status: string }>>([]);
+  const [connectionIdsByPlatform, setConnectionIdsByPlatform] = useState<Record<string, string>>({});
+  const [scheduleDate, setScheduleDate] = useState('');
+  const [scheduleTime, setScheduleTime] = useState('');
+  const [dryRun, setDryRun] = useState(true);
+  const [scheduling, setScheduling] = useState(false);
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
+  const [scheduleSuccess, setScheduleSuccess] = useState(false);
+
   useEffect(() => {
     async function loadPost() {
       setLoading(true);
@@ -162,6 +172,20 @@ export default function ComposerPage() {
     }
     loadPost();
   }, [postId]);
+
+  // Phase 5: Fetch connections for scheduling
+  useEffect(() => {
+    async function loadConnections() {
+      try {
+        const res = await fetch('/api/connections');
+        if (res.ok) {
+          const data = await res.json();
+          setConnections(data.connections || []);
+        }
+      } catch { /* ignore */ }
+    }
+    loadConnections();
+  }, []);
 
   const handleFieldChange = (field: keyof PublisherPost, value: string | string[]) => {
     setPost((prev) => ({ ...prev, [field]: value }));
@@ -866,6 +890,67 @@ export default function ComposerPage() {
       console.error('Error validating post:', error);
     } finally {
       setValidating(false);
+    }
+  };
+
+  // Phase 5: Schedule post for publishing
+  const handleSchedule = async () => {
+    setScheduling(true);
+    setScheduleError(null);
+    setScheduleSuccess(false);
+
+    try {
+      if (!scheduleDate || !scheduleTime) {
+        setScheduleError('Please set both date and time.');
+        return;
+      }
+
+      const selectedPlatforms = post.platform_targets as string[];
+      if (!selectedPlatforms.length) {
+        setScheduleError('No platforms selected.');
+        return;
+      }
+
+      // Verify each platform has a connection assigned
+      for (const p of selectedPlatforms) {
+        if (!connectionIdsByPlatform[p]) {
+          setScheduleError(`No connection assigned for ${p}.`);
+          return;
+        }
+      }
+
+      // Build ISO timestamp from date + time
+      const scheduledFor = new Date(`${scheduleDate}T${scheduleTime}`).toISOString();
+
+      // Save post first
+      await handleSave();
+
+      const res = await fetch(`/api/posts/${post.id}/schedule`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          scheduledFor,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          selectedPlatforms,
+          caption: post.caption,
+          connectionIdsByPlatform,
+          linkUrl: post.cta || undefined,
+          dryRun,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to schedule');
+      }
+
+      setScheduleSuccess(true);
+      setPost((prev) => ({ ...prev, status: 'scheduled' }));
+      setTimeout(() => setScheduleSuccess(false), 3000);
+    } catch (error) {
+      setScheduleError(error instanceof Error ? error.message : 'Failed to schedule');
+    } finally {
+      setScheduling(false);
     }
   };
 
@@ -1785,6 +1870,132 @@ export default function ComposerPage() {
                   </div>
                 )}
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Phase 5: Scheduling */}
+          <Card className="border-blue-900/50 bg-blue-950/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Clock className="h-4 w-4 text-blue-400" />
+                Schedule
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {/* Per-platform connection picker */}
+              {(post.platform_targets as string[]).length > 0 ? (
+                <>
+                  <div className="space-y-2">
+                    <label className="block text-xs font-medium text-zinc-400">
+                      Connection per Platform
+                    </label>
+                    {(post.platform_targets as string[]).map((platform) => {
+                      const platformConns = connections.filter(
+                        (c) => c.platform_id === platform && c.status === 'connected'
+                      );
+                      return (
+                        <div key={platform} className="flex items-center gap-2">
+                          <span className="text-xs text-zinc-300 w-16 truncate capitalize">
+                            {platform}
+                          </span>
+                          {platformConns.length > 0 ? (
+                            <select
+                              value={connectionIdsByPlatform[platform] || ''}
+                              onChange={(e) =>
+                                setConnectionIdsByPlatform((prev) => ({
+                                  ...prev,
+                                  [platform]: e.target.value,
+                                }))
+                              }
+                              className="flex-1 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs text-zinc-200 focus:border-blue-500 focus:outline-none"
+                            >
+                              <option value="">Select…</option>
+                              {platformConns.map((c) => (
+                                <option key={c.id} value={c.id}>
+                                  {c.account_label}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span className="text-xs text-zinc-600 italic">
+                              No connection
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Date & time pickers */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs font-medium text-zinc-400 mb-1">Date</label>
+                      <input
+                        type="date"
+                        value={scheduleDate}
+                        onChange={(e) => setScheduleDate(e.target.value)}
+                        className="w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-xs text-zinc-200 focus:border-blue-500 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-zinc-400 mb-1">Time</label>
+                      <input
+                        type="time"
+                        value={scheduleTime}
+                        onChange={(e) => setScheduleTime(e.target.value)}
+                        className="w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-xs text-zinc-200 focus:border-blue-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                  <div className="text-[10px] text-zinc-600">
+                    Timezone: {Intl.DateTimeFormat().resolvedOptions().timeZone}
+                  </div>
+
+                  {/* Dry-run toggle */}
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={dryRun}
+                      onChange={(e) => setDryRun(e.target.checked)}
+                      className="rounded border-zinc-600 bg-zinc-800 text-blue-500 focus:ring-blue-500"
+                    />
+                    <span className="text-xs text-zinc-300">Dry-run mode</span>
+                    <span className="text-[10px] text-zinc-600">(simulated)</span>
+                  </label>
+
+                  {/* Schedule button */}
+                  <Button
+                    onClick={handleSchedule}
+                    disabled={scheduling || post.status === 'scheduled'}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    {scheduling ? (
+                      <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Scheduling…</>
+                    ) : scheduleSuccess ? (
+                      <><CheckCircle className="h-4 w-4 mr-2" />Scheduled!</>
+                    ) : post.status === 'scheduled' ? (
+                      <><Clock className="h-4 w-4 mr-2" />Already Scheduled</>
+                    ) : (
+                      <><Send className="h-4 w-4 mr-2" />Schedule Post</>
+                    )}
+                  </Button>
+
+                  {scheduleError && (
+                    <div className="text-xs text-red-400 bg-red-500/10 p-2 rounded">
+                      {scheduleError}
+                    </div>
+                  )}
+                  {scheduleSuccess && (
+                    <div className="text-xs text-emerald-400 bg-emerald-500/10 p-2 rounded">
+                      Post scheduled successfully!
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-xs text-zinc-500 italic">
+                  Select platforms first in Settings below.
+                </p>
+              )}
             </CardContent>
           </Card>
 

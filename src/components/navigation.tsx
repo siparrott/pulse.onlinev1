@@ -10,6 +10,7 @@ import {
   Settings,
   Radio,
   ImagePlus,
+  Send,
 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
@@ -20,6 +21,7 @@ const navItems = [
   { href: '/queue', label: 'Queue', icon: ListTodo },
   { href: '/calendar', label: 'Calendar', icon: Calendar },
   { href: '/assets', label: 'Assets', icon: ImagePlus },
+  { href: '/publishing', label: 'Publishing', icon: Send },
 ];
 
 export function Navigation() {

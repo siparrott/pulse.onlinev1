@@ -278,6 +278,75 @@ export interface VariantBuildLog {
   createdAt: string;
 }
 
+// ── Phase 5: Posting Pipeline ─────────────────────────────
+
+export type ConnectionStatus = 'connected' | 'expired' | 'revoked' | 'error';
+export type ScheduleStatus = 'draft' | 'scheduled' | 'publishing' | 'partially_published' | 'published' | 'failed' | 'cancelled';
+export type DeliveryStatus = 'queued' | 'publishing' | 'published' | 'failed' | 'skipped';
+
+export interface UserPlatformConnection {
+  id: string;
+  user_id: string;
+  platform_id: Platform;
+  account_label: string;
+  external_account_id: string;
+  access_token_encrypted: string;
+  refresh_token_encrypted: string | null;
+  token_expires_at: string | null;
+  scopes: string[];
+  meta: Record<string, unknown>;
+  status: ConnectionStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PostSchedule {
+  id: string;
+  user_id: string;
+  post_id: string;
+  timezone: string;
+  scheduled_for: string;
+  status: ScheduleStatus;
+  meta: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+  // Joined data
+  deliveries?: PostDelivery[];
+  post?: PublisherPost;
+}
+
+export interface PostDelivery {
+  id: string;
+  post_schedule_id: string;
+  platform_id: string;
+  connection_id: string;
+  variant_storage_key: string | null;
+  caption: string;
+  link_url: string | null;
+  status: DeliveryStatus;
+  attempts: number;
+  last_error: string | null;
+  platform_post_id: string | null;
+  published_at: string | null;
+  next_retry_at: string | null;
+  meta: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+  // Joined data
+  connection?: UserPlatformConnection;
+}
+
+export interface JobRunLog {
+  id: string;
+  type: string;
+  post_schedule_id: string;
+  started_at: string;
+  finished_at: string | null;
+  ok: boolean;
+  summary: Record<string, unknown>;
+  error: string | null;
+}
+
 export interface ColumnMapping {
   date: string;
   platform_targets: string;
