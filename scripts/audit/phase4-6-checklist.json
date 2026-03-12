@@ -1,0 +1,305 @@
+{
+  "meta": {
+    "title": "Phases 4–6 Audit Checklist",
+    "generatedAt": "2025-07-21",
+    "commitBaseline": "a9959d3",
+    "totalItems": 29,
+    "breakdown": {
+      "high": 8,
+      "medium": 11,
+      "low": 10
+    }
+  },
+  "items": [
+    {
+      "id": "FIX-001",
+      "severity": "high",
+      "phase": 4,
+      "category": "data-model",
+      "title": "Add UNIQUE(post_id, platform_id) on post_variants",
+      "file": "supabase/migrations/003_post_variants.sql",
+      "status": "open",
+      "acceptanceCheck": "Rebuild variants for same post+platform succeeds; no duplicate rows"
+    },
+    {
+      "id": "FIX-002",
+      "severity": "high",
+      "phase": 4,
+      "category": "wiring",
+      "title": "Fix sign-url path validation to accept posts/ prefix",
+      "file": "src/app/(app)/api/sign-url/route.ts",
+      "status": "open",
+      "acceptanceCheck": "POST /api/sign-url with posts/… path returns signed URL"
+    },
+    {
+      "id": "FIX-003",
+      "severity": "high",
+      "phase": 4,
+      "category": "wiring",
+      "title": "Remove Phase 4 fields from CLIENT_ONLY_FIELDS",
+      "file": "src/lib/storage/posts.ts",
+      "status": "open",
+      "acceptanceCheck": "updatePost() with variant_strategy persists to Supabase"
+    },
+    {
+      "id": "FIX-004",
+      "severity": "high",
+      "phase": 5,
+      "category": "correctness",
+      "title": "Fix allFinalFailed using stale deliveries array",
+      "file": "src/app/(app)/api/jobs/publish-due/route.ts",
+      "status": "open",
+      "acceptanceCheck": "All deliveries exhaust retries → schedule status = failed"
+    },
+    {
+      "id": "FIX-005",
+      "severity": "high",
+      "phase": 5,
+      "category": "correctness",
+      "title": "Re-fetch connection after rotateTokensIfNeeded()",
+      "file": "src/app/(app)/api/jobs/publish-due/route.ts",
+      "status": "open",
+      "acceptanceCheck": "Expired token causes delivery to fail with correct error message"
+    },
+    {
+      "id": "FIX-006",
+      "severity": "high",
+      "phase": 6,
+      "category": "correctness",
+      "title": "Fix hasRealMetricsFetcher() always returning true",
+      "file": "src/lib/platforms/metrics/index.ts",
+      "status": "open",
+      "acceptanceCheck": "hasRealMetricsFetcher('instagram') returns false with dry-run only"
+    },
+    {
+      "id": "FIX-007",
+      "severity": "high",
+      "phase": 6,
+      "category": "data-integrity",
+      "title": "Fix overview API ignoring days filter for totals",
+      "file": "src/app/(app)/api/analytics/overview/route.ts",
+      "status": "open",
+      "acceptanceCheck": "Selecting 7 days shows only last-7-day totals"
+    },
+    {
+      "id": "FIX-008",
+      "severity": "high",
+      "phase": 5,
+      "category": "security",
+      "title": "Auth-gate or remove legacy /api/publish/run",
+      "file": "src/app/(app)/api/publish/run/route.ts",
+      "status": "open",
+      "acceptanceCheck": "Unauthenticated POST to /api/publish/run returns 401"
+    },
+    {
+      "id": "FIX-009",
+      "severity": "medium",
+      "phase": 5,
+      "category": "data-model",
+      "title": "Add ON DELETE SET NULL on post_deliveries.connection_id FK",
+      "file": "supabase/migrations/004_posting_pipeline.sql",
+      "status": "open",
+      "acceptanceCheck": "Deleting a connection doesn't cause FK violations"
+    },
+    {
+      "id": "FIX-010",
+      "severity": "medium",
+      "phase": 5,
+      "category": "reliability",
+      "title": "Add timeout on publisher.publish() calls",
+      "file": "src/app/(app)/api/jobs/publish-due/route.ts",
+      "status": "open",
+      "acceptanceCheck": "Hung publisher aborted after 30s"
+    },
+    {
+      "id": "FIX-011",
+      "severity": "medium",
+      "phase": 6,
+      "category": "reliability",
+      "title": "Make rollup upsert atomic in ingest runner",
+      "file": "src/app/(app)/api/jobs/ingest-engagement-due/route.ts",
+      "status": "open",
+      "acceptanceCheck": "Concurrent ingest runs don't create duplicate rollups"
+    },
+    {
+      "id": "FIX-012",
+      "severity": "medium",
+      "phase": 6,
+      "category": "data-integrity",
+      "title": "Fix time-series double-counting cumulative snapshots",
+      "file": "src/app/(app)/api/analytics/overview/route.ts",
+      "status": "open",
+      "acceptanceCheck": "Time-series chart values = latest metrics per delivery per day"
+    },
+    {
+      "id": "FIX-013",
+      "severity": "medium",
+      "phase": 5,
+      "category": "correctness",
+      "title": "Derive imageMimeType from variant format instead of hardcoded jpeg",
+      "file": "src/app/(app)/api/jobs/publish-due/route.ts",
+      "status": "open",
+      "acceptanceCheck": "PNG/WebP variants published with correct MIME type"
+    },
+    {
+      "id": "FIX-014",
+      "severity": "medium",
+      "phase": 5,
+      "category": "reliability",
+      "title": "Fix cancel vs publish runner race condition",
+      "file": "src/app/(app)/api/schedules/[id]/cancel/route.ts",
+      "status": "open",
+      "acceptanceCheck": "Cancelling a just-claimed schedule returns 409"
+    },
+    {
+      "id": "FIX-015",
+      "severity": "medium",
+      "phase": "4→5",
+      "category": "wiring",
+      "title": "Wire single_image strategy for publishing",
+      "file": "src/app/(app)/api/posts/[id]/schedule/route.ts",
+      "status": "open",
+      "acceptanceCheck": "single_image post has image attached during publish"
+    },
+    {
+      "id": "FIX-016",
+      "severity": "medium",
+      "phase": 4,
+      "category": "security",
+      "title": "Add path validation on upload-source",
+      "file": "src/app/(app)/api/upload-source/route.ts",
+      "status": "open",
+      "acceptanceCheck": "Uploading to ../../evil.json rejected"
+    },
+    {
+      "id": "FIX-017",
+      "severity": "medium",
+      "phase": 6,
+      "category": "security",
+      "title": "Add auth to analytics API routes",
+      "file": "src/app/(app)/api/analytics/*/route.ts",
+      "status": "open",
+      "acceptanceCheck": "Unauthenticated GET to /api/analytics/overview returns 401"
+    },
+    {
+      "id": "FIX-018",
+      "severity": "medium",
+      "phase": 5,
+      "category": "code-quality",
+      "title": "Remove redundant status ternary in publish runner",
+      "file": "src/app/(app)/api/jobs/publish-due/route.ts",
+      "status": "open",
+      "acceptanceCheck": "Code review: no ternary with identical branches"
+    },
+    {
+      "id": "FIX-019",
+      "severity": "medium",
+      "phase": 5,
+      "category": "security",
+      "title": "Clear encrypted tokens on disconnect",
+      "file": "src/app/(app)/api/connections/[id]/disconnect/route.ts",
+      "status": "open",
+      "acceptanceCheck": "Revoking connection nullifies token columns in DB"
+    },
+    {
+      "id": "FIX-020",
+      "severity": "low",
+      "phase": 6,
+      "category": "scalability",
+      "title": "Add pagination to analytics API routes",
+      "file": "src/app/(app)/api/analytics/*/route.ts",
+      "status": "open",
+      "acceptanceCheck": "?page=2&pageSize=20 returns correct slice"
+    },
+    {
+      "id": "FIX-021",
+      "severity": "low",
+      "phase": 6,
+      "category": "ux",
+      "title": "Add user feedback for analytics UI fetch errors",
+      "file": "src/app/(app)/analytics/page.tsx",
+      "status": "open",
+      "acceptanceCheck": "Network errors show toast or inline message"
+    },
+    {
+      "id": "FIX-022",
+      "severity": "low",
+      "phase": 4,
+      "category": "performance",
+      "title": "Parallelize Sharp variant building",
+      "file": "src/lib/images/variantBuilder.ts",
+      "status": "open",
+      "acceptanceCheck": "Build time reduced for multi-platform builds"
+    },
+    {
+      "id": "FIX-023",
+      "severity": "low",
+      "phase": 4,
+      "category": "performance",
+      "title": "Batch signed URL generation in fetchVariants()",
+      "file": "src/lib/storage/saveVariant.ts",
+      "status": "open",
+      "acceptanceCheck": "Single Supabase call replaces N calls"
+    },
+    {
+      "id": "FIX-024",
+      "severity": "low",
+      "phase": 5,
+      "category": "scalability",
+      "title": "Add pagination to schedules listing",
+      "file": "src/app/(app)/api/schedules/route.ts",
+      "status": "open",
+      "acceptanceCheck": "?page=2&pageSize=20 works correctly"
+    },
+    {
+      "id": "FIX-025",
+      "severity": "low",
+      "phase": 4,
+      "category": "data-model",
+      "title": "Stop writing stale public_url column",
+      "file": "src/lib/storage/saveVariant.ts",
+      "status": "open",
+      "acceptanceCheck": "saveVariant() doesn't generate signed URL during save"
+    },
+    {
+      "id": "FIX-026",
+      "severity": "low",
+      "phase": 6,
+      "category": "types",
+      "title": "NormalizedMetrics.currency typed as literal null",
+      "file": "src/lib/types/database.ts",
+      "status": "open",
+      "acceptanceCheck": "currency: string | null compiles"
+    },
+    {
+      "id": "FIX-027",
+      "severity": "low",
+      "phase": 6,
+      "category": "code-quality",
+      "title": "Inline PostRow type in analytics page — import from database.ts",
+      "file": "src/app/(app)/analytics/page.tsx",
+      "status": "open",
+      "acceptanceCheck": "Single source of truth for PostRow type"
+    },
+    {
+      "id": "FIX-028",
+      "severity": "low",
+      "phase": 6,
+      "category": "performance",
+      "title": "Add max-age cutoff for engagement ingestion",
+      "file": "src/app/(app)/api/jobs/ingest-engagement-due/route.ts",
+      "status": "open",
+      "acceptanceCheck": "Deliveries older than 90 days skipped"
+    },
+    {
+      "id": "FIX-029",
+      "severity": "low",
+      "phase": 6,
+      "category": "code-quality",
+      "title": "Remove dead FORTY_EIGHT_HOURS_MS constant",
+      "file": "src/app/(app)/api/jobs/ingest-engagement-due/route.ts",
+      "status": "open",
+      "acceptanceCheck": "No unused constants"
+    }
+  ]
+}

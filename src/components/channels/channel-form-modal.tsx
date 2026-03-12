@@ -58,7 +58,12 @@ export function ChannelFormModal({
   const [brandPack, setBrandPack] = useState<BrandPack | null>(null);
   const [loadingBrandPack, setLoadingBrandPack] = useState(false);
 
-  useEffect(() => {
+  // React-recommended pattern: adjust state during render instead of useEffect
+  // See https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  const [prevChannelKey, setPrevChannelKey] = useState<string | null>(null);
+  const channelKey = channel ? `${channel.id}-${isOpen}` : (isOpen ? 'new' : null);
+  if (channelKey !== prevChannelKey) {
+    setPrevChannelKey(channelKey);
     if (channel) {
       setName(channel.name);
       setProductCode(channel.product_code);
@@ -69,13 +74,7 @@ export function ChannelFormModal({
       setMinDaysBetweenPosts(String(channel.cadence_rules.min_days_between_posts || 1));
       setDefaultScheduleTime(channel.default_schedule_time);
       setStaticRequiresImage(channel.asset_requirements.static_requires_image || false);
-
-      // Load brand pack
       setLoadingBrandPack(true);
-      fetchBrandPack(channel.id).then((pack) => {
-        setBrandPack(pack);
-        setLoadingBrandPack(false);
-      });
     } else {
       setName('');
       setProductCode('');
@@ -88,6 +87,16 @@ export function ChannelFormModal({
       setStaticRequiresImage(false);
       setBrandPack(null);
       setTab('details');
+    }
+  }
+
+  // Async brand pack fetch stays in useEffect (setState in async callback is fine)
+  useEffect(() => {
+    if (channel) {
+      fetchBrandPack(channel.id).then((pack) => {
+        setBrandPack(pack);
+        setLoadingBrandPack(false);
+      });
     }
   }, [channel, isOpen]);
 

@@ -474,7 +474,7 @@ function saveBrandPackToLocalStorage(
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(packs));
     return packs.find((p) => p.channelId === channelId)!;
-  } catch (error) {
+  } catch {
     throw new Error('Failed to save brand pack to localStorage');
   }
 }

@@ -21,8 +21,8 @@ import { logVariantGenerationStart, logVariantGenerated, logVariantGovernance, l
 import { ENABLE_AI_VARIANTS } from '@/lib/config/feature-flags';
 import { fetchBrandPack } from '@/lib/storage/brand-packs';
 import { composeImagePrompt, validateBrandPackForAI } from '@/lib/ai/prompt-composer';
-import { logAIPromptComposed, logAIImageGenerated, logAIImageBlockedBrandViolation } from '@/lib/utils/brand-pack-audit';
-import type { PublisherPost, PublisherAsset, AssetRole, GovernanceStatus, PublisherChannel, Platform, ContentType, VisualVariant, PostVariant, SourceImage } from '@/lib/types/database';
+import { logAIPromptComposed, logAIImageGenerated } from '@/lib/utils/brand-pack-audit';
+import type { PublisherPost, PublisherAsset, AssetRole, PublisherChannel, Platform, ContentType, VisualVariant, PostVariant, SourceImage } from '@/lib/types/database';
 import { allSpecs, platformToSpecId, type PlatformSpecId } from '@/lib/platforms/specs';
 
 const ASSET_ROLE_OPTIONS = [
@@ -472,7 +472,8 @@ export default function ComposerPage() {
         try {
           const variantsForStorage = updatedVariants.map((v) => {
             if (v?.dataUrl && v.dataUrl.length > 1000 && !v.dataUrl.startsWith('placeholder:')) {
-              const { dataUrl, ...rest } = v;
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars
+              const { dataUrl: _dataUrl, ...rest } = v;
               return { ...rest, dataUrl: `placeholder:ai-${v.platformKey || 'img'}` };
             }
             return v;
@@ -808,7 +809,8 @@ export default function ComposerPage() {
       // (they stay in React state for display during the current session)
       const variantsForStorage = (post.visual_variants || []).map((v) => {
         if (v?.dataUrl && v.dataUrl.length > 1000 && !v.dataUrl.startsWith('placeholder:')) {
-          const { dataUrl, ...rest } = v;
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { dataUrl: _dataUrl, ...rest } = v;
           return { ...rest, dataUrl: `placeholder:ai-${v.platformKey || 'img'}` };
         }
         return v;
@@ -1078,6 +1080,7 @@ export default function ComposerPage() {
                       className="flex items-center gap-4 p-3 bg-zinc-800 rounded-lg"
                     >
                       {asset.mime_type?.startsWith('image/') && (
+                        // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={asset.storage_path}
                           alt={asset.filename}
@@ -1203,6 +1206,7 @@ export default function ComposerPage() {
                           >
                             {/* Image */}
                             {variant.dataUrl && !variant.dataUrl.startsWith('placeholder:') ? (
+                              // eslint-disable-next-line @next/next/no-img-element
                               <img
                                 src={variant.dataUrl}
                                 alt={`${variant.platformKey} variant`}
@@ -1452,7 +1456,7 @@ export default function ComposerPage() {
 
                 {/* Helper text */}
                 <div className="text-xs text-zinc-500 leading-relaxed">
-                  Cropping risk isn't a design issue — it's a platform rule. Phase 2 generates platform-safe variants automatically.
+                  Cropping risk isn&apos;t a design issue — it&apos;s a platform rule. Phase 2 generates platform-safe variants automatically.
                 </div>
               </CardContent>
             </Card>
@@ -1476,6 +1480,7 @@ export default function ComposerPage() {
                     >
                       {/* Thumbnail */}
                       {(variant.dataUrl || variant.storagePath) && (
+                        // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={variant.dataUrl || ''}
                           alt={variant.platformKey}
@@ -1762,6 +1767,7 @@ export default function ComposerPage() {
                     <div key={v.id} className="bg-zinc-800 rounded-lg overflow-hidden">
                       {/* Preview */}
                       {v.publicUrl && (
+                        // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={v.publicUrl}
                           alt={v.platformId}
@@ -2037,7 +2043,7 @@ export default function ComposerPage() {
                       type="button"
                       onClick={() => handlePlatformToggle(platform)}
                       className={`px-2 py-1 text-xs rounded-lg border transition-colors ${
-                        post.platform_targets.includes(platform as any)
+                        post.platform_targets.includes(platform as Platform)
                           ? 'bg-emerald-600 border-emerald-600 text-white'
                           : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:border-zinc-600'
                       }`}

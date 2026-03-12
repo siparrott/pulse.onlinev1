@@ -14,7 +14,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, isSupabaseConfigured } from '@/lib/supabase/client';
 import { adjustForQuietHours } from '@/lib/automation/actions';
-import type { AutomationRule, RuleConstraints } from '@/lib/types/database';
+import type { RuleConstraints } from '@/lib/types/database';
 
 const MAX_BATCH = 20;
 

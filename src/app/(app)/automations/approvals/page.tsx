@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import {
-  CheckCircle2, XCircle, Loader2, Clock, Zap, AlertTriangle,
+  CheckCircle2, XCircle, Loader2, Clock, Zap,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';

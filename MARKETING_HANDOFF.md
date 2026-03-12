@@ -1,4 +1,4 @@
-# Pulse.Online — Marketing Handoff Document
+# AxixOS — Marketing Handoff Document
 
 > **For**: Homepage design team
 > **Version**: 0.1.0
@@ -9,7 +9,7 @@
 
 ## 1. Product Positioning
 
-**Pulse.Online** is an internal, governed publishing system for multi-channel content management. It lets teams plan, validate, schedule, and publish social content across **9 product channels** — each with its own brand rules, platforms, and cadence — all enforced automatically by a built-in governance engine.
+**AxixOS** is an internal, governed publishing system for multi-channel content management. It lets teams plan, validate, schedule, and publish social content across **9 product channels** — each with its own brand rules, platforms, and cadence — all enforced automatically by a built-in governance engine.
 
 ### One-Liner
 > Plan, govern, and publish content across every product channel — with brand-safe guardrails built in.
@@ -247,4 +247,4 @@ Published  Failed
 
 ---
 
-*Document generated from codebase analysis — Pulse.Online v0.1.0*
+*Document generated from codebase analysis — AxixOS v0.1.0*

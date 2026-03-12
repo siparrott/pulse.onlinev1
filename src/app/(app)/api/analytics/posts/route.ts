@@ -37,7 +37,7 @@ export async function GET() {
 
     // Also fetch error counts per delivery (snapshots with ok=false)
     const deliveryIds = (rollups || []).map((r) => r.post_delivery_id);
-    let errorCounts: Record<string, number> = {};
+    const errorCounts: Record<string, number> = {};
 
     if (deliveryIds.length > 0) {
       const { data: errorSnapshots } = await supabase

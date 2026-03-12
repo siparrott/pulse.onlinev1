@@ -118,7 +118,8 @@ function calculateTargetDimensions(
  * Determines whether to crop or pad based on source/target ratios
  * Always prefer pad to avoid governance warnings and content loss
  */
-function determineMethod(sourceRatio: number, targetRatio: number): 'crop' | 'pad' {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function determineMethod(_sourceRatio: number, _targetRatio: number): 'crop' | 'pad' {
   // Always use pad to preserve all content and avoid edge text safety warnings
   // This ensures variants pass governance checks (status === 'ok')
   return 'pad';
@@ -260,7 +261,8 @@ export async function generateImageVariant(
   sourceFile: File | string,
   target: VariantTarget,
   postId: string,
-  sourceAssetId: string
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _sourceAssetId: string
 ): Promise<GeneratedVariant> {
   // Load source image
   const img = new Image();

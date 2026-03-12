@@ -22,7 +22,6 @@ import type { UserPlatformConnection, NormalizedMetrics } from '@/lib/types/data
 const MAX_BATCH = 50;
 const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
-const FORTY_EIGHT_HOURS_MS = 48 * 60 * 60 * 1000;
 
 export async function POST(request: NextRequest) {
   // ── Auth ─────────────────────────────────────────────────

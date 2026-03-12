@@ -1,4 +1,4 @@
--- Pulse.Online Database Schema
+-- AxixOS Database Schema
 -- Internal Governed Publishing System
 
 ------------------------------------------------------------

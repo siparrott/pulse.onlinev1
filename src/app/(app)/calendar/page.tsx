@@ -199,7 +199,7 @@ export default function CalendarPage() {
             return (
               <div
                 key={index}
-                className={`min-h-[120px] p-2 border-b border-r border-zinc-800 ${
+                className={`min-h-30 p-2 border-b border-r border-zinc-800 ${
                   isCurrentMonth ? 'bg-zinc-950' : 'bg-zinc-900/50'
                 }`}
               >

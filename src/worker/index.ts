@@ -27,7 +27,7 @@ import { startPollLoop } from './poll-loop';
 // ─── Boot ───────────────────────────────────────────
 
 console.log('═══════════════════════════════════════');
-console.log('  Pulse.Online Worker — Phase 3A');
+console.log('  AxixOS Worker — Phase 3A');
 console.log('═══════════════════════════════════════');
 
 // Validate required env vars

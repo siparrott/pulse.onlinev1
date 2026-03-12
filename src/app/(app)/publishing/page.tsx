@@ -2,10 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Clock, RefreshCw, CheckCircle, XCircle, AlertTriangle, Loader2, Send, Eye } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import Link from 'next/link';
 
 interface Delivery {
   id: string;

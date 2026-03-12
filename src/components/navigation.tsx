@@ -38,7 +38,7 @@ export function Navigation() {
       <div className="p-6">
         <Link href="/dashboard" className="flex items-center gap-2">
           <Radio className="h-8 w-8 text-emerald-500" />
-          <span className="text-xl font-bold text-white">pulse.online</span>
+          <span className="text-xl font-bold text-white">AxixOS</span>
         </Link>
       </div>
 

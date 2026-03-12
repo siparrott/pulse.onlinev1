@@ -1,6 +1,6 @@
 -- ============================================================
 -- Migration 001: Brand Packs + FK from publisher_channels
--- Pulse.Online - Brand Pack Onboarding System
+-- AxixOS - Brand Pack Onboarding System
 -- ============================================================
 
 BEGIN;

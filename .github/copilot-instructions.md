@@ -1,7 +1,7 @@
-# Pulse.Online - Copilot Instructions
+# AxixOS - Copilot Instructions
 
 ## Project Overview
-Pulse.Online is an internal governed publishing system for multi-channel content management. It supports 9 product channels with different governance profiles.
+AxixOS is an internal governed publishing system for multi-channel content management. It supports 9 product channels with different governance profiles.
 
 ## Tech Stack
 - Next.js 14+ (App Router)

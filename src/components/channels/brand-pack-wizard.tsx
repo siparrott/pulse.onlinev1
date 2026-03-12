@@ -139,7 +139,7 @@ export function BrandPackWizard({ governanceProfile, initialData, onComplete, on
         </div>
         <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 transition-all duration-300"
+            className="h-full bg-linear-to-r from-emerald-600 to-emerald-400 transition-all duration-300"
             style={{ width: `${completeness}%` }}
           />
         </div>

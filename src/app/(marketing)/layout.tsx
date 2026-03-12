@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Pulse.Online - Governed Publishing System',
+  title: 'AxixOS - Governed Publishing System',
   description: 'Internal governed publishing system for multi-channel content management',
 };
 

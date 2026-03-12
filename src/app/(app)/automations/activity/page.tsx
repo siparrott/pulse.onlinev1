@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Activity, Loader2, CheckCircle2, XCircle, Clock,
   AlertTriangle, Ban, Zap, ChevronRight,
@@ -40,17 +40,19 @@ export default function AutomationsActivityPage() {
   const [logs, setLogs] = useState<ActionLog[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchLogs = useCallback(async () => {
-    try {
-      const res = await fetch('/api/automations/activity?limit=100');
-      const data = await res.json();
-      setLogs(data.logs ?? []);
-    } catch { /* empty */ }
-  }, []);
-
   useEffect(() => {
-    fetchLogs().finally(() => setLoading(false));
-  }, [fetchLogs]);
+    let cancelled = false;
+    fetch('/api/automations/activity?limit=100')
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled) setLogs(data.logs ?? []);
+      })
+      .catch(() => { /* empty */ })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   if (loading) {
     return (

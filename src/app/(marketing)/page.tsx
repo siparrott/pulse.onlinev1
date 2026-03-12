@@ -193,7 +193,7 @@ function MockAppFrame({
           <div className="mb-4 flex items-center gap-2">
             <div className="h-8 w-8 rounded-none bg-emerald-500/15 ring-1 ring-emerald-500/25" />
             <div>
-              <div className="text-sm font-bold text-zinc-100">Pulse</div>
+              <div className="text-sm font-bold text-zinc-100">AxixOS</div>
               <div className="text-xs text-zinc-500">Internal v0.1.0</div>
             </div>
           </div>
@@ -297,14 +297,14 @@ function MockAppFrame({
   );
 }
 
-export default function PulseHomepage() {
+export default function MarketingHomepage() {
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       {/* Angled background grid */}
       <div className="pointer-events-none fixed inset-0 opacity-[0.20]">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(63,63,70,0.3)_1px,transparent_1px),linear-gradient(to_bottom,rgba(63,63,70,0.3)_1px,transparent_1px)] bg-[size:56px_56px]" />
-        <div className="absolute -top-40 left-1/2 h-[520px] w-[900px] -translate-x-1/2 rotate-6 bg-emerald-500/8 blur-3xl" />
-        <div className="absolute -bottom-40 left-1/2 h-[520px] w-[900px] -translate-x-1/2 -rotate-6 bg-emerald-500/6 blur-3xl" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(63,63,70,0.3)_1px,transparent_1px),linear-gradient(to_bottom,rgba(63,63,70,0.3)_1px,transparent_1px)] bg-size-[56px_56px]" />
+        <div className="absolute -top-40 left-1/2 h-130 w-225 -translate-x-1/2 rotate-6 bg-emerald-500/8 blur-3xl" />
+        <div className="absolute -bottom-40 left-1/2 h-130 w-225 -translate-x-1/2 -rotate-6 bg-emerald-500/6 blur-3xl" />
       </div>
 
       {/* Header */}
@@ -313,7 +313,7 @@ export default function PulseHomepage() {
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-none bg-emerald-500/15 ring-1 ring-emerald-500/30" />
             <div className="leading-tight">
-              <div className="text-sm font-bold tracking-wide">Pulse.Online</div>
+              <div className="text-sm font-bold tracking-wide">AxixOS</div>
               <div className="text-xs text-zinc-400">Governed publishing system</div>
             </div>
           </div>
@@ -346,7 +346,7 @@ export default function PulseHomepage() {
             </h1>
 
             <p className="mt-5 max-w-xl text-zinc-300/90">
-              Pulse.Online is the internal system that keeps multi-channel publishing
+              AxixOS is the internal system that keeps multi-channel publishing
               under control — with a governance engine that scores every post and
               blocks spam, scams, and risky language before it ships.
             </p>
@@ -370,7 +370,7 @@ export default function PulseHomepage() {
           </div>
 
           <div className="col-span-12 md:col-span-6">
-            <MockAppFrame title="Pulse.Online" subtitle="Composer + Preview + Governance" />
+            <MockAppFrame title="AxixOS" subtitle="Composer + Preview + Governance" />
           </div>
         </div>
       </section>
@@ -397,7 +397,7 @@ export default function PulseHomepage() {
               <div className="flex items-start gap-3">
                 <div className="mt-1 h-9 w-9 rounded-none bg-emerald-500/15 ring-1 ring-emerald-500/25" />
                 <div>
-                  <div className="text-sm font-bold text-zinc-50">Pulse fix</div>
+                  <div className="text-sm font-bold text-zinc-50">AxixOS fix</div>
                   <p className="mt-1 text-sm text-zinc-300/90">
                     Governance-first publishing. Every post gets scored, classified,
                     and given an unlock path when blocked.
@@ -429,7 +429,7 @@ export default function PulseHomepage() {
           <SectionTitle
             eyebrow="GOVERNANCE ENGINE"
             title="Three tiers. One scoring system."
-            desc="Every post starts at 100. Errors deduct 25 points. Warnings deduct 10. Pulse then classifies the post and tells you exactly what to fix."
+            desc="Every post starts at 100. Errors deduct 25 points. Warnings deduct 10. AxixOS then classifies the post and tells you exactly what to fix."
           />
 
           <div className="mt-8 grid grid-cols-12 gap-6">
@@ -491,7 +491,7 @@ export default function PulseHomepage() {
               <div>
                 <div className="text-sm font-bold text-zinc-50">Unlock paths</div>
                 <p className="mt-1 text-sm text-zinc-300/90">
-                  When a post is blocked, Pulse doesn&apos;t just refuse — it tells you what to do next:
+                  When a post is blocked, AxixOS doesn&apos;t just refuse — it tells you what to do next:
                   &quot;Remove hype language&quot;, &quot;Add CTA&quot;, &quot;Upload required image&quot;, etc.
                 </p>
               </div>
@@ -720,7 +720,7 @@ export default function PulseHomepage() {
               <div>
                 <div className="text-sm font-bold text-zinc-50">Cadence enforcement</div>
                 <p className="mt-1 text-sm text-zinc-300/90">
-                  Pulse enforces max posts/week and spacing rules per channel — so you don&apos;t accidentally spam or drift.
+                  AxixOS enforces max posts/week and spacing rules per channel — so you don&apos;t accidentally spam or drift.
                 </p>
               </div>
               <Chip>
@@ -842,7 +842,7 @@ export default function PulseHomepage() {
         <div className="mx-auto max-w-6xl px-6 py-10">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <div className="text-sm font-bold text-zinc-100">Pulse.Online</div>
+              <div className="text-sm font-bold text-zinc-100">AxixOS</div>
               <div className="mt-1 text-sm text-zinc-400">
                 Governed publishing for multi-channel teams.
               </div>
@@ -863,14 +863,14 @@ export default function PulseHomepage() {
             </div>
             <div className="flex items-center gap-4 text-xs">
               <a
-                href="https://pulse.online/terms"
+                href="https://axixos.com/terms"
                 className="text-zinc-500 underline decoration-zinc-700 underline-offset-2 transition hover:text-zinc-300 hover:decoration-emerald-500/40"
               >
                 Terms of Service
               </a>
               <span className="text-zinc-700">•</span>
               <a
-                href="https://pulse.online/privacy"
+                href="https://axixos.com/privacy"
                 className="text-zinc-500 underline decoration-zinc-700 underline-offset-2 transition hover:text-zinc-300 hover:decoration-emerald-500/40"
               >
                 Privacy Policy

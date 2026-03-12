@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Zap, Plus, Power, PowerOff, Trash2, Loader2, Shield,
-  Clock, Hash, AlertTriangle, CheckCircle2, RefreshCw,
+  Clock, Hash, RefreshCw,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -145,7 +145,7 @@ export default function AutomationsMetaPage() {
       {typeof window !== 'undefined' && (
         <Card className="border-amber-500/30 bg-amber-500/5">
           <CardContent className="py-3 flex items-center gap-2 text-amber-400 text-sm">
-            <Shield className="h-4 w-4 flex-shrink-0" />
+            <Shield className="h-4 w-4 shrink-0" />
             All automations are governed by safety rails: daily caps, cooldowns, quiet hours, and kill switch.
           </CardContent>
         </Card>
@@ -200,7 +200,7 @@ export default function AutomationsMetaPage() {
           <CardContent className="py-12 text-center text-zinc-500">
             <Zap className="h-12 w-12 mx-auto mb-3 opacity-30" />
             <p>No automation rules yet.</p>
-            <p className="text-sm mt-1">Click "New Rule" to get started with a preset.</p>
+            <p className="text-sm mt-1">Click &quot;New Rule&quot; to get started with a preset.</p>
           </CardContent>
         </Card>
       ) : (
@@ -244,7 +244,7 @@ export default function AutomationsMetaPage() {
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="flex items-center gap-2 shrink-0">
                       <Button
                         variant="ghost"
                         size="sm"

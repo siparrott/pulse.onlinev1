@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
   let actions = body.actions ?? [];
   let constraints = body.constraints ?? {};
   let requiresApproval = body.requires_approval ?? true;
-  let scope = body.scope ?? 'all_posts';
+  const scope = body.scope ?? 'all_posts';
 
   if (body.preset_id) {
     const preset = getPresetById(body.preset_id);

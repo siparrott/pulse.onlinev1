@@ -5,7 +5,7 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Pulse.Online - Publishing System',
+  title: 'AxixOS - Publishing System',
   description: 'Internal governed publishing system for multi-channel content management',
 };
 

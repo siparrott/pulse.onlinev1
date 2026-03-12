@@ -80,6 +80,7 @@ function TwitterPreview({ caption, channelName, hashtags, assets, date, variants
       {/* Image */}
       {hasImage && (
         <div className="mx-4 mb-3 rounded-2xl overflow-hidden border border-zinc-800">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={useVariant ? variant.dataUrl : assets.find((a) => a.mime_type?.startsWith('image/'))?.storage_path}
             alt="Post media"
@@ -145,6 +146,7 @@ function InstagramPreview({ caption, channelName, hashtags, assets, variants }: 
 
       {/* Image area */}
       {hasImage ? (
+        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={useVariant ? variant.dataUrl : assets.find((a) => a.mime_type?.startsWith('image/'))?.storage_path}
           alt="Post media"
@@ -230,6 +232,7 @@ function LinkedInPreview({ caption, channelName, hashtags, cta, assets, variants
 
       {/* Image */}
       {hasImage && (
+        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={useVariant ? variant.dataUrl : assets.find((a) => a.mime_type?.startsWith('image/'))?.storage_path}
           alt="Post media"
@@ -293,6 +296,7 @@ function FacebookPreview({ caption, channelName, hashtags, assets, variants }: S
 
       {/* Image */}
       {hasImage && (
+        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={useVariant ? variant.dataUrl : assets.find((a) => a.mime_type?.startsWith('image/'))?.storage_path}
           alt="Post media"
@@ -337,6 +341,7 @@ function TikTokPreview({ caption, channelName, hashtags, assets, variants }: Soc
       {/* Video / image area */}
       <div className="relative aspect-9/16 max-h-90 bg-zinc-900 overflow-hidden">
         {hasImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={useVariant ? variant.dataUrl : assets.find((a) => a.mime_type?.startsWith('image/'))?.storage_path}
             alt="Post media"
@@ -400,6 +405,7 @@ function YouTubePreview({ caption, channelName, assets, variants }: SocialPrevie
       {/* Video thumbnail */}
       <div className="relative aspect-video bg-zinc-900 overflow-hidden">
         {hasImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={useVariant ? variant.dataUrl : assets.find((a) => a.mime_type?.startsWith('image/'))?.storage_path}
             alt="Thumbnail"
@@ -447,6 +453,7 @@ function PinterestPreview({ caption, channelName, assets, variants }: SocialPrev
       {/* Pin image */}
       <div className="relative bg-zinc-900 overflow-hidden rounded-t-2xl">
         {hasImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={useVariant ? variant.dataUrl : assets.find((a) => a.mime_type?.startsWith('image/'))?.storage_path}
             alt="Pin"

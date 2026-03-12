@@ -1,4 +1,4 @@
--- Pulse.Online Seed Data
+-- AxixOS Seed Data
 -- Initial product channels
 
 INSERT INTO publisher_channels (name, product_code, status, governance_profile, allowed_platforms, cadence_rules, asset_requirements)

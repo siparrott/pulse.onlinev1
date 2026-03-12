@@ -268,6 +268,7 @@ function checkBrandPackCompliance(
 function applyVisionVerdictToGovernance(
   verdict: VisionVerdict,
   brandPack: BrandPack,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _channel: PublisherChannel
 ): AssetGovernanceIssue[] {
   const issues: AssetGovernanceIssue[] = [];

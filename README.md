@@ -1,4 +1,4 @@
-# Pulse.Online
+# AxixOS
 
 **Internal Governed Publishing System for Multi-Channel Content Management**
 

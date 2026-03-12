@@ -1,4 +1,4 @@
-// Database types for Pulse.Online
+// Database types for AxixOS
 
 export type GovernanceProfile = 'strict' | 'standard' | 'experimental';
 export type ChannelStatus = 'private' | 'beta' | 'public';

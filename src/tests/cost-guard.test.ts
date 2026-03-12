@@ -7,8 +7,8 @@
  *   3. Global daily cap → block when exceeded
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { checkCostGuard, incrementQuota } from '@/lib/ai/cost-guard';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { checkCostGuard } from '@/lib/ai/cost-guard';
 
 // Mock Supabase client
 function createMockSupabase(overrides: {

@@ -5,7 +5,6 @@ import { useParams } from 'next/navigation';
 import {
   ArrowLeft, Eye, Heart, MessageCircle, Share2, TrendingUp,
   RefreshCw, Loader2, AlertTriangle, ChevronDown, ChevronUp,
-  Clock,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -87,7 +86,8 @@ export default function PostAnalyticsDetailPage() {
     setLoading(false);
   }, [deliveryId]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (loading) {
     return (
@@ -195,7 +195,7 @@ export default function PostAnalyticsDetailPage() {
                       style={{ height: `${pct}%` }}
                       title={`${formatDate(s.captured_at)}: ${s.metrics.views ?? 0} views`}
                     />
-                    <span className="text-[8px] text-zinc-600 rotate-[-45deg] origin-top-left whitespace-nowrap">
+                    <span className="text-[8px] text-zinc-600 -rotate-45 origin-top-left whitespace-nowrap">
                       {s.captured_at.slice(5, 16).replace('T', ' ')}
                     </span>
                   </div>
@@ -307,7 +307,7 @@ export default function PostAnalyticsDetailPage() {
       {delivery.last_error && (
         <Card className="border-red-900/50">
           <CardContent className="flex items-center gap-3 py-4">
-            <AlertTriangle className="h-5 w-5 text-red-400 flex-shrink-0" />
+            <AlertTriangle className="h-5 w-5 text-red-400 shrink-0" />
             <div>
               <p className="text-sm text-red-400 font-medium">Delivery Error</p>
               <p className="text-xs text-zinc-500">{delivery.last_error}</p>

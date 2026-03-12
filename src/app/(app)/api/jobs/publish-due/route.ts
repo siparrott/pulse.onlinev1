@@ -12,7 +12,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, isSupabaseConfigured } from '@/lib/supabase/client';
 import { getPublisher } from '@/lib/platforms/publishers';
-import { decryptAccessToken, rotateTokensIfNeeded } from '@/lib/platforms/tokens';
+import { rotateTokensIfNeeded } from '@/lib/platforms/tokens';
 import type { UserPlatformConnection, PostDelivery } from '@/lib/types/database';
 import type { PublishPayload } from '@/lib/platforms/publishers/types';
 

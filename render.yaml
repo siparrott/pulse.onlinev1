@@ -1,4 +1,4 @@
-# Render Blueprint — Pulse.Online
+# Render Blueprint — AxixOS
 # Two services: web (Next.js) + worker (background job processor)
 #
 # Deploy with: render blueprint sync

@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase/client';
 export async function logBrandPackCreated(
   channelId: string,
   brandPackId: string,
-  brandPackData: any
+  brandPackData: Record<string, unknown>
 ) {
   try {
     await supabase.from('publisher_governance_events').insert({
@@ -30,7 +30,7 @@ export async function logBrandPackCreated(
 export async function logBrandPackUpdated(
   channelId: string,
   brandPackId: string,
-  changes: any,
+  changes: Record<string, unknown>,
   previousCompleteness: number,
   newCompleteness: number
 ) {

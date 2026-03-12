@@ -36,21 +36,39 @@ export default function DigestsPage() {
   const [markdown, setMarkdown] = useState('');
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'cards' | 'markdown'>('cards');
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  const loadDigest = async (d: string) => {
+  // Track date changes in render phase to set loading state synchronously
+  const [prevDate, setPrevDate] = useState(date);
+  if (date !== prevDate) {
+    setPrevDate(date);
     setLoading(true);
-    try {
-      const res = await fetch(`/api/digests/daily?date=${d}`);
-      if (res.ok) {
-        const data = await res.json();
-        setSummary(data.summary);
-        setMarkdown(data.markdown);
-      }
-    } catch { /* ignore */ }
-    setLoading(false);
+    setSummary(null);
+    setMarkdown('');
+  }
+
+  const handleRefresh = () => {
+    setLoading(true);
+    setSummary(null);
+    setMarkdown('');
+    setRefreshKey((k) => k + 1);
   };
 
-  useEffect(() => { loadDigest(date); }, [date]);
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/digests/daily?date=${date}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data) {
+          setSummary(data.summary);
+          setMarkdown(data.markdown);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [date, refreshKey]);
 
   const goDay = (offset: number) => {
     const d = new Date(date);
@@ -90,7 +108,7 @@ export default function DigestsPage() {
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>
-          <Button variant="secondary" onClick={() => loadDigest(date)} disabled={loading}>
+          <Button variant="secondary" onClick={handleRefresh} disabled={loading}>
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
         </div>

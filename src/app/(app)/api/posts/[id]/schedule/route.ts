@@ -117,7 +117,7 @@ export async function POST(
 
     // ── Create PostDelivery rows ────────────────────────────
     // Look up variant storage keys per platform (if platform_safe strategy)
-    let variantsByPlatform: Record<string, string> = {};
+    const variantsByPlatform: Record<string, string> = {};
     if (post.variant_strategy === 'platform_safe') {
       const { data: variants } = await supabase
         .from('post_variants')

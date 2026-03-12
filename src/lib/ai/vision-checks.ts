@@ -104,7 +104,8 @@ export async function runBrandPackVisionChecks(
 
 // ─── Prompt builders ────────────────────────────────
 
-function buildVisionSystemPrompt(brandPack: BrandPack): string {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function buildVisionSystemPrompt(_brandPack: BrandPack): string {
   return `You are an internal brand-compliance image analyst for a governed publishing system.
 Your job is to examine a generated marketing image and report ONLY factual observations.
 
@@ -194,6 +195,7 @@ function parseVisionResponse(raw: string): VisionVerdict {
 export function applyBrandPackRules(
   verdict: VisionVerdict,
   brandPack: BrandPack,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _platformKey: string
 ): AssetGovernanceIssue[] {
   const issues: AssetGovernanceIssue[] = [];

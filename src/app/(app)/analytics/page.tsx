@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   BarChart3, Eye, Heart, MessageCircle, Share2, TrendingUp,
-  RefreshCw, Loader2, ChevronRight, AlertTriangle,
+  RefreshCw, Loader2, ChevronRight,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -97,9 +97,18 @@ export default function AnalyticsPage() {
   }, []);
 
   useEffect(() => {
-    setLoading(true);
-    Promise.all([loadOverview(), loadPosts()]).finally(() => setLoading(false));
-  }, [loadOverview, loadPosts]);
+    let cancelled = false;
+    const run = async () => {
+      try {
+        await Promise.all([loadOverview(), loadPosts()]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    run();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'overview', label: 'Overview' },
@@ -257,7 +266,7 @@ function OverviewTab({ overview }: { overview: OverviewData | null }) {
                       style={{ height: `${pct}%` }}
                       title={`${d.date}: ${d.views} views`}
                     />
-                    <span className="text-[9px] text-zinc-600 rotate-[-45deg] origin-top-left whitespace-nowrap">
+                    <span className="text-[9px] text-zinc-600 -rotate-45 origin-top-left whitespace-nowrap">
                       {d.date.slice(5)}
                     </span>
                   </div>

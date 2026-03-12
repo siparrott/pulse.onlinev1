@@ -4,7 +4,7 @@
  * NEVER allows free-text prompts from users
  */
 
-import type { BrandPack, Platform, ContentType } from '@/lib/types/database';
+import type { BrandPack, ContentType } from '@/lib/types/database';
 
 export interface PromptComponents {
   systemPrompt: string;
