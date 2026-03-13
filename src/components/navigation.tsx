@@ -14,8 +14,10 @@ import {
   BarChart3,
   Mail,
   Zap,
+  LogOut,
 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
+import { signOut } from '@/app/actions/auth';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: Radio },
@@ -32,6 +34,10 @@ const navItems = [
 
 export function Navigation() {
   const pathname = usePathname();
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
 
   return (
     <nav className="fixed left-0 top-0 h-full w-64 bg-zinc-900 border-r border-zinc-800">
@@ -73,6 +79,13 @@ export function Navigation() {
           <Settings className="h-5 w-5" />
           Settings
         </Link>
+        <button
+          onClick={handleSignOut}
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100 transition-colors"
+        >
+          <LogOut className="h-5 w-5" />
+          Sign Out
+        </button>
         <div className="px-3 py-2 text-xs text-zinc-600">
           Internal Use Only
         </div>
