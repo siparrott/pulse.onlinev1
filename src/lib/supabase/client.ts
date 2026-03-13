@@ -1,5 +1,15 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr';
+import { createClient as createSupabaseClient, SupabaseClient } from '@supabase/supabase-js';
 
+// Browser client using @supabase/ssr (recommended for Next.js App Router)
+export function createClient() {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}
+
+// Legacy singleton export for backward compatibility
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
@@ -15,8 +25,8 @@ if (!isConfigured) {
 // Create a placeholder client for build time
 // This will only work at runtime when env vars are set
 export const supabase: SupabaseClient = isConfigured
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : createClient('https://placeholder.supabase.co', 'placeholder-key');
+  ? createSupabaseClient(supabaseUrl, supabaseAnonKey)
+  : createSupabaseClient('https://placeholder.supabase.co', 'placeholder-key');
 
 // Server-side client with service role (for admin operations)
 export function createServerClient() {
@@ -24,7 +34,7 @@ export function createServerClient() {
   if (!supabaseServiceKey) {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY not configured');
   }
-  return createClient(supabaseUrl, supabaseServiceKey);
+  return createSupabaseClient(supabaseUrl, supabaseServiceKey);
 }
 
 // Helper to check if Supabase is available
