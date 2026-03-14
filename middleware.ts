@@ -1,14 +1,46 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+const PROTECTED_PREFIXES = [
+  '/dashboard',
+  '/composer',
+  '/calendar',
+  '/channels',
+  '/queue',
+  '/imports',
+  '/assets',
+  '/publishing',
+  '/automations',
+  '/analytics',
+  '/digests',
+  '/settings',
+]
+
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+
+  // Skip Supabase entirely for public/marketing routes
+  const isProtected = PROTECTED_PREFIXES.some((p) => pathname.startsWith(p))
+  const isLoginPage = pathname === '/login'
+
+  if (!isProtected && !isLoginPage) {
+    return NextResponse.next()
+  }
+
+  // Guard against missing env vars (prevents Edge Runtime crash)
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!supabaseUrl || !supabaseKey) {
+    return NextResponse.next()
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   })
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseKey,
     {
       cookies: {
         getAll() {
@@ -33,80 +65,14 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   // Protected routes - redirect to login if not authenticated
-  if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
-  }
-
-  if (!user && request.nextUrl.pathname.startsWith('/composer')) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
-  }
-
-  if (!user && request.nextUrl.pathname.startsWith('/calendar')) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
-  }
-
-  if (!user && request.nextUrl.pathname.startsWith('/channels')) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
-  }
-
-  if (!user && request.nextUrl.pathname.startsWith('/queue')) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
-  }
-
-  if (!user && request.nextUrl.pathname.startsWith('/imports')) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
-  }
-
-  if (!user && request.nextUrl.pathname.startsWith('/assets')) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
-  }
-
-  if (!user && request.nextUrl.pathname.startsWith('/publishing')) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
-  }
-
-  if (!user && request.nextUrl.pathname.startsWith('/automations')) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
-  }
-
-  if (!user && request.nextUrl.pathname.startsWith('/analytics')) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
-  }
-
-  if (!user && request.nextUrl.pathname.startsWith('/digests')) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
-  }
-
-  if (!user && request.nextUrl.pathname.startsWith('/settings')) {
+  if (!user && isProtected) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
 
   // Redirect authenticated users away from login page
-  if (user && request.nextUrl.pathname === '/login') {
+  if (user && isLoginPage) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)
