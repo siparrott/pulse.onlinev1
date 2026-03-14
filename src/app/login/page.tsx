@@ -24,18 +24,27 @@ export default function LoginPage() {
       return
     }
 
+    // Diagnostic: show key length and first/last chars to verify correctness
+    console.log('SUPABASE_URL:', url)
+    console.log('ANON_KEY length:', key.length, 'starts:', key.substring(0, 10), 'ends:', key.substring(key.length - 6))
+    console.log('KEY has whitespace/newlines:', /\s/.test(key))
+
     const params = new URLSearchParams(hash.substring(1))
     const accessToken = params.get('access_token')
     const refreshToken = params.get('refresh_token')
 
-    if (!accessToken || !refreshToken) return
+    if (!accessToken || !refreshToken) {
+      setError(`Missing tokens: access=${!!accessToken}, refresh=${!!refreshToken}`)
+      return
+    }
 
-    const supabase = createBrowserClient(url, key)
+    // Trim any accidental whitespace from env vars
+    const supabase = createBrowserClient(url.trim(), key.trim())
 
     supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
       .then(({ error: sessionError }) => {
         if (sessionError) {
-          setError(sessionError.message)
+          setError(`${sessionError.message} | URL: ${url?.substring(0, 20)}... | KEY ends: ${key?.substring(key.length - 6)} | KEY len: ${key?.length}`)
         } else {
           // Clear hash and redirect
           window.location.hash = ''
