@@ -16,16 +16,21 @@ export default function LoginPage() {
     const hash = window.location.hash
     if (!hash || !hash.includes('access_token')) return
 
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+    if (!url || !key) {
+      setError(`Missing env vars: URL=${!!url}, KEY=${!!key}`)
+      return
+    }
+
     const params = new URLSearchParams(hash.substring(1))
     const accessToken = params.get('access_token')
     const refreshToken = params.get('refresh_token')
 
     if (!accessToken || !refreshToken) return
 
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    const supabase = createBrowserClient(url, key)
 
     supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
       .then(({ error: sessionError }) => {
