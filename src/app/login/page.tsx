@@ -1,62 +1,92 @@
 'use client'
 
-import { createBrowserClient } from '@supabase/ssr'
-import { Github } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
-
 export default function LoginPage() {
-  const [error, setError] = useState<string | null>(null)
+  const supabase = createClient()
   const router = useRouter()
 
-  // On mount, check if tokens are in the URL hash (implicit OAuth flow)
-  useEffect(() => {
-    const hash = window.location.hash
-    if (!hash || !hash.includes('access_token')) return
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 
-    if (!url || !key) {
-      setError(`Missing env vars: URL=${!!url}, KEY=${!!key}`)
+  async function signInWithGoogle() {
+    setLoading(true)
+    setError(null)
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${siteUrl}/auth/callback`,
+      },
+    })
+
+    if (error) {
+      setError(error.message)
+      setLoading(false)
+    }
+  }
+
+  async function signInWithFacebook() {
+    setLoading(true)
+    setError(null)
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'facebook',
+      options: {
+        redirectTo: `${siteUrl}/auth/callback`,
+      },
+    })
+
+    if (error) {
+      setError(error.message)
+      setLoading(false)
+    }
+  }
+
+  async function signInWithEmail(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (error) {
+      setError(error.message)
+      setLoading(false)
       return
     }
 
-    // Diagnostic: show key length and first/last chars to verify correctness
-    console.log('SUPABASE_URL:', url)
-    console.log('ANON_KEY length:', key.length, 'starts:', key.substring(0, 10), 'ends:', key.substring(key.length - 6))
-    console.log('KEY has whitespace/newlines:', /\s/.test(key))
+    router.push('/dashboard')
+    router.refresh()
+  }
 
-    const params = new URLSearchParams(hash.substring(1))
-    const accessToken = params.get('access_token')
-    const refreshToken = params.get('refresh_token')
+  async function signUpWithEmail(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
 
-    if (!accessToken || !refreshToken) {
-      setError(`Missing tokens: access=${!!accessToken}, refresh=${!!refreshToken}`)
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+    })
+
+    if (error) {
+      setError(error.message)
+      setLoading(false)
       return
     }
 
-    // Trim any accidental whitespace from env vars
-    const supabase = createBrowserClient(url.trim(), key.trim())
-
-    supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
-      .then(({ error: sessionError }) => {
-        if (sessionError) {
-          setError(`${sessionError.message} | URL: ${url?.substring(0, 20)}... | KEY ends: ${key?.substring(key.length - 6)} | KEY len: ${key?.length}`)
-        } else {
-          // Clear hash and redirect
-          window.location.hash = ''
-          router.push('/dashboard')
-        }
-      })
-  }, [router])
-
-  const handleOAuthLogin = (provider: 'github' | 'google') => {
-    const redirectTo = `${window.location.origin}/login`
-    const url = `${SUPABASE_URL}/auth/v1/authorize?provider=${provider}&redirect_to=${encodeURIComponent(redirectTo)}`
-    window.location.href = url
+    router.push('/dashboard')
+    router.refresh()
   }
 
   return (
@@ -66,22 +96,18 @@ export default function LoginPage() {
           {/* Logo/Header */}
           <div className="mb-8 text-center">
             <div className="mx-auto mb-4 h-12 w-12 rounded-lg bg-emerald-500/15 ring-1 ring-emerald-500/30" />
-            <h1 className="text-2xl font-bold text-zinc-100">Welcome to AxixOS</h1>
+            <h1 className="text-2xl font-bold text-zinc-100">Login to AxixOS</h1>
             <p className="mt-2 text-sm text-zinc-400">
               Sign in to access your governed publishing system
             </p>
           </div>
 
           {/* OAuth Buttons */}
-          <div className="space-y-3">
-            {error && (
-              <div className="rounded-lg border border-red-800 bg-red-900/30 p-3 text-sm text-red-300">
-                {error}
-              </div>
-            )}
+          <div className="space-y-3 mb-8">
             <button
-              onClick={() => handleOAuthLogin('google')}
-              className="flex w-full items-center justify-center gap-3 rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm font-medium text-zinc-100 transition hover:bg-zinc-700"
+              onClick={signInWithGoogle}
+              disabled={loading}
+              className="flex w-full items-center justify-center gap-3 rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm font-medium text-zinc-100 transition hover:bg-zinc-700 disabled:opacity-50"
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
@@ -93,17 +119,80 @@ export default function LoginPage() {
             </button>
 
             <button
-              onClick={() => handleOAuthLogin('github')}
-              className="flex w-full items-center justify-center gap-3 rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm font-medium text-zinc-100 transition hover:bg-zinc-700"
+              onClick={signInWithFacebook}
+              disabled={loading}
+              className="flex w-full items-center justify-center gap-3 rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm font-medium text-zinc-100 transition hover:bg-zinc-700 disabled:opacity-50"
             >
-              <Github className="h-5 w-5" />
-              Continue with GitHub
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="#1877F2">
+                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+              </svg>
+              Continue with Facebook
             </button>
           </div>
 
+          {/* Divider */}
+          <div className="relative mb-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-zinc-800" />
+            </div>
+            <div className="relative flex justify-center text-xs">
+              <span className="bg-zinc-900/50 px-3 text-zinc-500">or sign in with email</span>
+            </div>
+          </div>
+
+          {/* Email Form */}
+          <form onSubmit={signInWithEmail} className="space-y-4">
+            <input
+              type="email"
+              placeholder="Email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30"
+              required
+            />
+
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30"
+              required
+            />
+
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="submit"
+                disabled={loading}
+                className="rounded-lg bg-emerald-600 px-4 py-3 text-sm font-medium text-white transition hover:bg-emerald-500 disabled:opacity-50"
+              >
+                Sign in
+              </button>
+
+              <button
+                type="button"
+                onClick={signUpWithEmail}
+                disabled={loading}
+                className="rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm font-medium text-zinc-100 transition hover:bg-zinc-700 disabled:opacity-50"
+              >
+                Sign up
+              </button>
+            </div>
+          </form>
+
+          {/* Error */}
+          {error && (
+            <div className="mt-4 rounded-lg border border-red-800 bg-red-900/30 p-3 text-sm text-red-300">
+              {error}
+            </div>
+          )}
+
           {/* Footer */}
           <p className="mt-6 text-center text-xs text-zinc-500">
-            By signing in, you agree to our Terms of Service and Privacy Policy
+            By signing in, you agree to our{' '}
+            <a href="/terms" className="text-emerald-400/80 hover:text-emerald-300">Terms of Service</a>
+            {' '}and{' '}
+            <a href="/privacy" className="text-emerald-400/80 hover:text-emerald-300">Privacy Policy</a>
           </p>
         </div>
 
