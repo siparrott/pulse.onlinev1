@@ -6,18 +6,25 @@ import { useState } from 'react'
 
 export default function LoginPage() {
   const [loading, setLoading] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const supabase = createClient()
 
   const handleOAuthLogin = async (provider: 'github' | 'google') => {
     setLoading(provider)
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    })
-    if (error) {
-      console.error('Error logging in:', error.message)
+    setError(null)
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      })
+      if (error) {
+        setError(error.message)
+        setLoading(null)
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'An unexpected error occurred')
       setLoading(null)
     }
   }
@@ -37,6 +44,11 @@ export default function LoginPage() {
 
           {/* OAuth Buttons */}
           <div className="space-y-3">
+            {error && (
+              <div className="rounded-lg border border-red-800 bg-red-900/30 p-3 text-sm text-red-300">
+                {error}
+              </div>
+            )}
             <button
               onClick={() => handleOAuthLogin('google')}
               disabled={loading !== null}
