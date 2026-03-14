@@ -1,12 +1,20 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 export default function LoginPage() {
-  const supabase = createClient()
+  const supabaseRef = useRef<SupabaseClient | null>(null)
   const router = useRouter()
+
+  function getSupabase() {
+    if (!supabaseRef.current) {
+      supabaseRef.current = createClient()
+    }
+    return supabaseRef.current
+  }
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -19,7 +27,7 @@ export default function LoginPage() {
     setLoading(true)
     setError(null)
 
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { error } = await getSupabase().auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${siteUrl}/auth/callback`,
@@ -36,7 +44,7 @@ export default function LoginPage() {
     setLoading(true)
     setError(null)
 
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { error } = await getSupabase().auth.signInWithOAuth({
       provider: 'facebook',
       options: {
         redirectTo: `${siteUrl}/auth/callback`,
@@ -54,7 +62,7 @@ export default function LoginPage() {
     setLoading(true)
     setError(null)
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error } = await getSupabase().auth.signInWithPassword({
       email,
       password,
     })
@@ -74,7 +82,7 @@ export default function LoginPage() {
     setLoading(true)
     setError(null)
 
-    const { error } = await supabase.auth.signUp({
+    const { error } = await getSupabase().auth.signUp({
       email,
       password,
     })
