@@ -8,7 +8,15 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createClient()
-    await supabase.auth.exchangeCodeForSession(code)
+    const { error } = await supabase.auth.exchangeCodeForSession(code)
+
+    if (error) {
+      console.error('exchangeCodeForSession error:', error.message)
+      return NextResponse.redirect(`${origin}/login?error=callback_exchange_failed`)
+    }
+  } else {
+    console.error('No code param in callback')
+    return NextResponse.redirect(`${origin}/login?error=no_code`)
   }
 
   return NextResponse.redirect(`${origin}/dashboard`)

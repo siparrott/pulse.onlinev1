@@ -1,13 +1,14 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 export default function LoginPage() {
   const supabaseRef = useRef<SupabaseClient | null>(null)
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   function getSupabase() {
     if (!supabaseRef.current) {
@@ -21,7 +22,17 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  // Show callback errors from query params
+  useEffect(() => {
+    const callbackError = searchParams.get('error')
+    if (callbackError) {
+      setError(`Callback error: ${callbackError}`)
+    }
+  }, [searchParams])
+
+  function getRedirectUrl() {
+    return `${window.location.origin}/auth/callback`
+  }
 
   async function signInWithGoogle() {
     setLoading(true)
@@ -30,7 +41,7 @@ export default function LoginPage() {
     const { error } = await getSupabase().auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${siteUrl}/auth/callback`,
+        redirectTo: getRedirectUrl(),
       },
     })
 
@@ -47,7 +58,7 @@ export default function LoginPage() {
     const { error } = await getSupabase().auth.signInWithOAuth({
       provider: 'facebook',
       options: {
-        redirectTo: `${siteUrl}/auth/callback`,
+        redirectTo: getRedirectUrl(),
       },
     })
 
