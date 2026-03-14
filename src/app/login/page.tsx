@@ -1,15 +1,46 @@
 'use client'
 
+import { createBrowserClient } from '@supabase/ssr'
 import { Github } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 
 export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
+
+  // On mount, check if tokens are in the URL hash (implicit OAuth flow)
+  useEffect(() => {
+    const hash = window.location.hash
+    if (!hash || !hash.includes('access_token')) return
+
+    const params = new URLSearchParams(hash.substring(1))
+    const accessToken = params.get('access_token')
+    const refreshToken = params.get('refresh_token')
+
+    if (!accessToken || !refreshToken) return
+
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+
+    supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
+      .then(({ error: sessionError }) => {
+        if (sessionError) {
+          setError(sessionError.message)
+        } else {
+          // Clear hash and redirect
+          window.location.hash = ''
+          router.push('/dashboard')
+        }
+      })
+  }, [router])
 
   const handleOAuthLogin = (provider: 'github' | 'google') => {
-    const redirectTo = `${window.location.origin}/auth/callback`
+    const redirectTo = `${window.location.origin}/login`
     const url = `${SUPABASE_URL}/auth/v1/authorize?provider=${provider}&redirect_to=${encodeURIComponent(redirectTo)}`
     window.location.href = url
   }
