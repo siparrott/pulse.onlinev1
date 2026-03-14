@@ -9,35 +9,39 @@ export function createClient() {
   );
 }
 
-// Legacy singleton export for backward compatibility
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-
 // Check if Supabase is properly configured
-const isConfigured: boolean = !!(supabaseUrl && supabaseAnonKey);
-
-if (!isConfigured) {
-  console.warn(
-    'Supabase environment variables not set. Please configure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY'
-  );
+export function isSupabaseConfigured(): boolean {
+  return !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 }
 
-// Create a placeholder client for build time
-// This will only work at runtime when env vars are set
-export const supabase: SupabaseClient = isConfigured
-  ? createSupabaseClient(supabaseUrl, supabaseAnonKey)
-  : createSupabaseClient('https://placeholder.supabase.co', 'placeholder-key');
+// Lazy singleton — only created when first accessed at runtime, not at build time
+let _supabase: SupabaseClient | null = null;
+
+function getSupabaseClient(): SupabaseClient {
+  if (!_supabase) {
+    _supabase = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+  }
+  return _supabase;
+}
+
+// Legacy export — uses a Proxy so importing `supabase` doesn't crash at build time
+export const supabase: SupabaseClient = new Proxy({} as SupabaseClient, {
+  get(_target, prop) {
+    return getSupabaseClient()[prop as keyof SupabaseClient];
+  },
+});
 
 // Server-side client with service role (for admin operations)
-export function createServerClient() {
+export function createServerClient(): SupabaseClient {
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseServiceKey) {
-    throw new Error('SUPABASE_SERVICE_ROLE_KEY not configured');
+  if (supabaseServiceKey) {
+    return createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      supabaseServiceKey
+    );
   }
-  return createSupabaseClient(supabaseUrl, supabaseServiceKey);
-}
-
-// Helper to check if Supabase is available
-export function isSupabaseConfigured(): boolean {
-  return isConfigured;
+  return getSupabaseClient();
 }
