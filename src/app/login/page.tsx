@@ -13,15 +13,20 @@ export default function LoginPage() {
     setLoading(provider)
     setError(null)
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
+          skipBrowserRedirect: true,
         },
       })
       if (error) {
         setError(error.message)
         setLoading(null)
+        return
+      }
+      if (data.url) {
+        window.location.href = data.url
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'An unexpected error occurred')
