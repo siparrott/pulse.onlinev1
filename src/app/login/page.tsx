@@ -1,11 +1,19 @@
 'use client'
 
-import { useRef, useState, useEffect } from 'react'
+import { Suspense, useRef, useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
+  )
+}
+
+function LoginForm() {
   const supabaseRef = useRef<SupabaseClient | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
