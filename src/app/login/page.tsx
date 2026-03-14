@@ -12,35 +12,14 @@ export default function LoginPage() {
   const handleOAuthLogin = async (provider: 'github' | 'google') => {
     setLoading(provider)
     setError(null)
-
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-    if (!url || url === 'https://placeholder.supabase.co') {
-      setError('Supabase is not configured. Check environment variables.')
-      setLoading(null)
-      return
-    }
-
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          skipBrowserRedirect: true,
-        },
-      })
-      if (error) {
-        setError(error.message)
-        setLoading(null)
-        return
-      }
-      if (data.url) {
-        window.location.href = data.url
-      } else {
-        setError('No redirect URL returned from Supabase')
-        setLoading(null)
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'An unexpected error occurred')
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    })
+    if (error) {
+      setError(error.message)
       setLoading(null)
     }
   }
