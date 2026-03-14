@@ -83,14 +83,18 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     * - marketing pages (/, /privacy, /terms)
-     */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/dashboard/:path*',
+    '/composer/:path*',
+    '/calendar/:path*',
+    '/channels/:path*',
+    '/queue/:path*',
+    '/imports/:path*',
+    '/assets/:path*',
+    '/publishing/:path*',
+    '/automations/:path*',
+    '/analytics/:path*',
+    '/digests/:path*',
+    '/settings/:path*',
+    '/login',
   ],
 }
