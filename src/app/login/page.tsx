@@ -1,17 +1,20 @@
 'use client'
 
-import { createClient } from '@/lib/supabase/client'
+import { createBrowserClient } from '@supabase/ssr'
 import { Github } from 'lucide-react'
 import { useState } from 'react'
 
 export default function LoginPage() {
   const [loading, setLoading] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const supabase = createClient()
 
   const handleOAuthLogin = async (provider: 'github' | 'google') => {
     setLoading(provider)
     setError(null)
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
