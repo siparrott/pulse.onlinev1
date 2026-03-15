@@ -1,6 +1,6 @@
 import { getUserWorkspace } from '@/lib/workspaces/get-user-workspace'
 import { createClient } from '@/lib/supabase/server'
-import { Layers, Calendar, Upload, ListTodo, TrendingUp, AlertTriangle, PenTool, Image, FileText, Shield } from 'lucide-react'
+import { Layers, Calendar, Upload, ListTodo, TrendingUp, AlertTriangle, PenTool, Image, FileText, Shield, Settings, Mail, Zap, ScrollText } from 'lucide-react'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -52,6 +52,30 @@ const quickActions = [
     label: 'Analytics',
     description: 'Engagement metrics and performance insights',
     icon: FileText,
+  },
+  {
+    href: '/audit',
+    label: 'Audit Log',
+    description: 'Full governance and publishing audit trail',
+    icon: ScrollText,
+  },
+  {
+    href: '/digests',
+    label: 'Digests',
+    description: 'Weekly summaries and performance recaps',
+    icon: Mail,
+  },
+  {
+    href: '/automations',
+    label: 'Automations',
+    description: 'Rules, crossposting, and scheduled workflows',
+    icon: Zap,
+  },
+  {
+    href: '/settings',
+    label: 'Settings',
+    description: 'System configuration and workspace info',
+    icon: Settings,
   },
 ]
 

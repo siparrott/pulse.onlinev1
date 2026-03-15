@@ -36,6 +36,12 @@ export default async function AppLayout({
             <a href="/imports" className="hover:text-white">CSV Import</a>
             <a href="/channels" className="hover:text-white">Channels</a>
             <a href="/assets" className="hover:text-white">Assets</a>
+            <a href="/publishing" className="hover:text-white">Publishing</a>
+            <a href="/analytics" className="hover:text-white">Analytics</a>
+            <a href="/audit" className="hover:text-white">Audit Log</a>
+            <a href="/digests" className="hover:text-white">Digests</a>
+            <a href="/automations" className="hover:text-white">Automations</a>
+            <a href="/settings" className="hover:text-white">Settings</a>
           </nav>
 
           <form action="/auth/signout" method="post">
