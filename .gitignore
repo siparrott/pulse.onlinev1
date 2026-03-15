@@ -43,3 +43,6 @@ yarn-error.log*
 New folder/
 Workspace/
 next-env.d.ts
+
+.vercel
+.env*.local
