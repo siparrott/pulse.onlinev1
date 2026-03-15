@@ -18,7 +18,14 @@ const PROTECTED_PREFIXES = [
 ]
 
 export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl
+  const { pathname, searchParams } = request.nextUrl
+
+  // Catch stray auth code on root (Supabase redirect URL allowlist fallback)
+  if (pathname === '/' && searchParams.has('code') && !searchParams.has('error')) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/auth/callback'
+    return NextResponse.redirect(url)
+  }
 
   // Skip Supabase entirely for public/marketing routes
   const isProtected = PROTECTED_PREFIXES.some((p) => pathname.startsWith(p))
@@ -85,6 +92,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    '/',
     '/dashboard/:path*',
     '/composer/:path*',
     '/calendar/:path*',
