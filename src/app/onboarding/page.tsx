@@ -1,18 +1,42 @@
-import Link from 'next/link'
-import { redirect } from 'next/navigation'
-import { getUserWorkspace } from '@/lib/workspaces/get-user-workspace'
+'use client'
 
-export default async function OnboardingPage() {
-  const { user, workspace } = await getUserWorkspace()
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 
-  if (!user) {
-    redirect('/login')
-  }
+export default function OnboardingPage() {
+  const router = useRouter()
+  const [status, setStatus] = useState<'loading' | 'error' | 'done'>('loading')
+  const [error, setError] = useState('')
 
-  // If they already have a workspace, skip onboarding
-  if (workspace) {
-    redirect('/dashboard')
-  }
+  useEffect(() => {
+    async function provision() {
+      try {
+        const res = await fetch('/api/workspaces/provision', { method: 'POST' })
+        const data = await res.json()
+
+        if (res.status === 409) {
+          // Already has a workspace — go to dashboard
+          router.replace('/dashboard')
+          return
+        }
+
+        if (!res.ok) {
+          setStatus('error')
+          setError(data.error ?? 'Failed to create workspace')
+          return
+        }
+
+        setStatus('done')
+        // Brief pause so user sees success, then redirect
+        setTimeout(() => router.replace('/dashboard'), 1200)
+      } catch {
+        setStatus('error')
+        setError('Network error — please try again')
+      }
+    }
+
+    provision()
+  }, [router])
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -32,26 +56,33 @@ export default async function OnboardingPage() {
           <div>
             <h1 className="text-3xl font-bold">Welcome to AxixOS</h1>
             <p className="mt-2 text-white/70">
-              Your workspace setup is now ready.
+              Setting up your workspace…
             </p>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-            <p className="text-sm text-white/50">Workspace</p>
-            <p className="mt-2 text-xl font-semibold">
-              No workspace found
-            </p>
-            <p className="mt-1 text-sm text-white/50">
-              A workspace will be created for you automatically.
-            </p>
-          </div>
+          {status === 'loading' && (
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+              <p className="text-sm text-white/50">Creating your workspace…</p>
+            </div>
+          )}
 
-          <Link
-            href="/dashboard"
-            className="inline-flex rounded-lg border border-white/15 px-4 py-2 text-sm"
-          >
-            Go to dashboard
-          </Link>
+          {status === 'done' && (
+            <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-5">
+              <p className="text-sm text-emerald-400">Workspace created! Redirecting to dashboard…</p>
+            </div>
+          )}
+
+          {status === 'error' && (
+            <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-5">
+              <p className="text-sm text-red-400">{error}</p>
+              <button
+                onClick={() => { setStatus('loading'); setError(''); window.location.reload() }}
+                className="mt-3 rounded-lg border border-white/15 px-4 py-2 text-sm"
+              >
+                Retry
+              </button>
+            </div>
+          )}
         </div>
       </main>
     </div>
