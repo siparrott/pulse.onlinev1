@@ -30,9 +30,14 @@ export async function getUserWorkspace() {
     return { user, workspace: null }
   }
 
+  const workspace = workspaceMember?.workspace as
+    | { id: string; name: string; slug: string; owner_user_id: string; created_at: string }
+    | null
+    | undefined
+
   return {
     user,
-    workspace: workspaceMember?.workspace ?? null,
+    workspace: workspace ?? null,
     role: workspaceMember?.role ?? null,
   }
 }
