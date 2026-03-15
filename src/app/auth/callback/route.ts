@@ -13,7 +13,11 @@ export async function GET(request: Request) {
     if (!error) {
       return NextResponse.redirect(`${origin}${next}`)
     }
+
+    console.error('Auth callback exchange error:', error.message)
+    const msg = encodeURIComponent(error.message)
+    return NextResponse.redirect(`${origin}/login?error=${msg}`)
   }
 
-  return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`)
+  return NextResponse.redirect(`${origin}/login?error=no_code_in_callback`)
 }
