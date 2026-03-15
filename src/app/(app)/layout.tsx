@@ -1,18 +1,19 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { getUserWorkspace } from '@/lib/workspaces/get-user-workspace'
 
 export default async function AppLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { user, workspace, role } = await getUserWorkspace()
 
   if (!user) {
     redirect('/login')
+  }
+
+  if (!workspace) {
+    redirect('/onboarding')
   }
 
   return (
@@ -21,7 +22,15 @@ export default async function AppLayout({
         <div className="mx-auto flex max-w-6xl items-center justify-between">
           <div>
             <p className="text-lg font-semibold">AxixOS</p>
-            <p className="text-sm text-white/60">{user.email}</p>
+            <p className="text-sm text-white/60">
+              {workspace.name} · {role}
+            </p>
+            <p className="text-xs text-white/40">{user.email}</p>
+          </div>
+
+          <div className="flex gap-4 text-sm text-white/70">
+            <a href="/dashboard" className="hover:text-white">Dashboard</a>
+            <a href="/channels" className="hover:text-white">Channels</a>
           </div>
 
           <form action="/auth/signout" method="post">
