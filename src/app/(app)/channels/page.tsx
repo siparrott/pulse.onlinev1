@@ -31,9 +31,9 @@ export default async function ChannelsPage() {
 
         <Link
           href="/api/connect/meta/start"
-          className="rounded-lg border border-white/15 px-4 py-2 text-sm opacity-50"
+          className="rounded-lg border border-white/15 px-4 py-2 text-sm"
         >
-          Connect Facebook / Instagram (coming soon)
+          Connect Facebook / Instagram
         </Link>
       </div>
 
