@@ -1,155 +1,79 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
-import { createClient } from '@/lib/supabase/server'
+import { getUserWorkspace } from '@/lib/workspaces/get-user-workspace'
+import { saveConnectedAccount } from '@/lib/workspaces/save-connected-account'
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = request.nextUrl
-  const code = searchParams.get('code')
-  const state = searchParams.get('state')
-  const error = searchParams.get('error')
-  const errorDescription = searchParams.get('error_description')
+  const { user, workspace } = await getUserWorkspace()
 
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://axixos.online'
-
-  if (error) {
-    console.error('LinkedIn OAuth error:', error, errorDescription)
-    return NextResponse.redirect(
-      `${baseUrl}/channels?error=${encodeURIComponent(errorDescription || error)}`
-    )
+  if (!user || !workspace) {
+    return NextResponse.redirect(new URL('/login', process.env.NEXT_PUBLIC_SITE_URL))
   }
+
+  const code = request.nextUrl.searchParams.get('code')
+  const state = request.nextUrl.searchParams.get('state')
 
   if (!code || !state) {
     return NextResponse.redirect(
-      `${baseUrl}/channels?error=${encodeURIComponent('Missing code or state')}`
+      new URL('/channels?error=linkedin_missing_code', process.env.NEXT_PUBLIC_SITE_URL)
     )
   }
 
-  // Verify state
-  const cookieStore = await cookies()
-  const savedState = cookieStore.get('linkedin_oauth_state')?.value
-
-  if (!savedState || savedState !== state) {
-    return NextResponse.redirect(
-      `${baseUrl}/channels?error=${encodeURIComponent('Invalid OAuth state')}`
-    )
-  }
-
-  // Clear state cookie
-  cookieStore.delete('linkedin_oauth_state')
-
-  const clientId = process.env.LINKEDIN_CLIENT_ID!
-  const clientSecret = process.env.LINKEDIN_CLIENT_SECRET!
-  const redirectUri = process.env.LINKEDIN_REDIRECT_URI!
-
-  // Exchange code for access token
   const tokenRes = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
     body: new URLSearchParams({
       grant_type: 'authorization_code',
       code,
-      client_id: clientId,
-      client_secret: clientSecret,
-      redirect_uri: redirectUri,
+      redirect_uri: process.env.LINKEDIN_REDIRECT_URI!,
+      client_id: process.env.LINKEDIN_CLIENT_ID!,
+      client_secret: process.env.LINKEDIN_CLIENT_SECRET!,
     }),
   })
 
+  const tokenJson = await tokenRes.json()
+
   if (!tokenRes.ok) {
-    const tokenError = await tokenRes.text()
-    console.error('LinkedIn token exchange failed:', tokenError)
+    console.error('LinkedIn token error', tokenJson)
     return NextResponse.redirect(
-      `${baseUrl}/channels?error=${encodeURIComponent('Token exchange failed')}`
+      new URL('/channels?error=linkedin_token_failed', process.env.NEXT_PUBLIC_SITE_URL)
     )
   }
 
-  const tokenData = await tokenRes.json()
-  const accessToken = tokenData.access_token
-  const expiresIn = tokenData.expires_in
-
-  // Fetch LinkedIn profile using userinfo endpoint (OpenID Connect)
   const profileRes = await fetch('https://api.linkedin.com/v2/userinfo', {
-    headers: { Authorization: `Bearer ${accessToken}` },
+    headers: {
+      Authorization: `Bearer ${tokenJson.access_token}`,
+    },
   })
 
+  const profileJson = await profileRes.json()
+
   if (!profileRes.ok) {
-    const profileError = await profileRes.text()
-    console.error('LinkedIn profile fetch failed:', profileError)
+    console.error('LinkedIn profile error', profileJson)
     return NextResponse.redirect(
-      `${baseUrl}/channels?error=${encodeURIComponent('Profile fetch failed')}`
+      new URL('/channels?error=linkedin_profile_failed', process.env.NEXT_PUBLIC_SITE_URL)
     )
   }
 
-  const profile = await profileRes.json()
+  await saveConnectedAccount({
+    workspaceId: workspace.id,
+    userId: user.id,
+    provider: 'linkedin',
+    providerUserId: profileJson.sub ?? null,
+    accountName: profileJson.name ?? profileJson.email ?? 'LinkedIn Account',
+    accountType: 'member',
+    accessToken: tokenJson.access_token ?? null,
+    refreshToken: tokenJson.refresh_token ?? null,
+    expiresAt: tokenJson.expires_in
+      ? new Date(Date.now() + tokenJson.expires_in * 1000).toISOString()
+      : null,
+    scope: tokenJson.scope ?? null,
+    tokenType: tokenJson.token_type ?? null,
+    metadata: profileJson,
+  })
 
-  // Get current AxixOS user and workspace
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
-    return NextResponse.redirect(`${baseUrl}/login`)
-  }
-
-  const { data: workspaceMember } = await supabase
-    .from('workspace_members')
-    .select('workspace_id')
-    .eq('user_id', user.id)
-    .limit(1)
-    .maybeSingle()
-
-  if (!workspaceMember) {
-    return NextResponse.redirect(
-      `${baseUrl}/channels?error=${encodeURIComponent('No workspace found')}`
-    )
-  }
-
-  const expiresAt = new Date(Date.now() + expiresIn * 1000).toISOString()
-
-  // Save connected account
-  const { data: account, error: accountError } = await supabase
-    .from('connected_accounts')
-    .insert({
-      workspace_id: workspaceMember.workspace_id,
-      user_id: user.id,
-      provider: 'linkedin',
-      provider_user_id: profile.sub,
-      account_name: profile.name || `${profile.given_name} ${profile.family_name}`,
-      account_type: 'member',
-      status: 'active',
-      metadata: {
-        email: profile.email,
-        picture: profile.picture,
-      },
-    })
-    .select()
-    .single()
-
-  if (accountError) {
-    console.error('Failed to save connected account:', accountError)
-    return NextResponse.redirect(
-      `${baseUrl}/channels?error=${encodeURIComponent('Failed to save account: ' + accountError.message)}`
-    )
-  }
-
-  // Save OAuth token
-  const { error: tokenSaveError } = await supabase
-    .from('oauth_tokens')
-    .insert({
-      connected_account_id: account.id,
-      access_token: accessToken,
-      refresh_token: tokenData.refresh_token || null,
-      expires_at: expiresAt,
-      scope: tokenData.scope || 'openid profile email',
-      token_type: tokenData.token_type || 'Bearer',
-      metadata: {},
-    })
-
-  if (tokenSaveError) {
-    console.error('Failed to save OAuth token:', tokenSaveError)
-    // Account was saved, token save failed — still redirect but with warning
-    return NextResponse.redirect(
-      `${baseUrl}/channels?error=${encodeURIComponent('Account saved but token save failed')}`
-    )
-  }
-
-  return NextResponse.redirect(`${baseUrl}/channels`)
+  return NextResponse.redirect(
+    new URL('/channels?success=linkedin_connected', process.env.NEXT_PUBLIC_SITE_URL)
+  )
 }

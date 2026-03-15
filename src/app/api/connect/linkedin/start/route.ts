@@ -1,40 +1,24 @@
 import { NextResponse } from 'next/server'
-import { randomBytes } from 'crypto'
-import { cookies } from 'next/headers'
+import { getUserWorkspace } from '@/lib/workspaces/get-user-workspace'
 
 export async function GET() {
-  const clientId = process.env.LINKEDIN_CLIENT_ID
-  const redirectUri = process.env.LINKEDIN_REDIRECT_URI
+  const { user, workspace } = await getUserWorkspace()
 
-  if (!clientId || !redirectUri) {
-    return NextResponse.json(
-      { error: 'LinkedIn OAuth not configured' },
-      { status: 500 }
-    )
+  if (!user || !workspace) {
+    return NextResponse.redirect(new URL('/login', process.env.NEXT_PUBLIC_SITE_URL))
   }
 
-  const state = randomBytes(16).toString('hex')
-
-  const cookieStore = await cookies()
-  cookieStore.set('linkedin_oauth_state', state, {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'lax',
-    maxAge: 600,
-    path: '/',
-  })
-
-  const scopes = ['openid', 'profile', 'email']
+  const state = `${workspace.id}:${user.id}:${crypto.randomUUID()}`
 
   const params = new URLSearchParams({
     response_type: 'code',
-    client_id: clientId,
-    redirect_uri: redirectUri,
+    client_id: process.env.LINKEDIN_CLIENT_ID!,
+    redirect_uri: process.env.LINKEDIN_REDIRECT_URI!,
     state,
-    scope: scopes.join(' '),
+    scope: 'openid profile email',
   })
 
-  const authUrl = `https://www.linkedin.com/oauth/v2/authorization?${params.toString()}`
-
-  return NextResponse.redirect(authUrl)
+  return NextResponse.redirect(
+    `https://www.linkedin.com/oauth/v2/authorization?${params.toString()}`
+  )
 }
