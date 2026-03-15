@@ -39,7 +39,8 @@ function LoginForm() {
   }, [searchParams])
 
   function getRedirectUrl() {
-    return `${window.location.origin}/auth/callback`
+    const next = searchParams.get('next') || '/dashboard'
+    return `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`
   }
 
   async function signInWithGoogle() {
@@ -92,7 +93,8 @@ function LoginForm() {
       return
     }
 
-    router.push('/dashboard')
+    const next = searchParams.get('next') || '/dashboard'
+    router.push(next)
     router.refresh()
   }
 
@@ -112,7 +114,8 @@ function LoginForm() {
       return
     }
 
-    router.push('/dashboard')
+    const next = searchParams.get('next') || '/dashboard'
+    router.push(next)
     router.refresh()
   }
 

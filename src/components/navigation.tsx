@@ -32,7 +32,7 @@ const navItems = [
   { href: '/automations', label: 'Automations', icon: Zap },
 ];
 
-export function Navigation() {
+export function Navigation({ userEmail }: { userEmail?: string }) {
   const pathname = usePathname();
 
   const handleSignOut = async () => {
@@ -72,6 +72,11 @@ export function Navigation() {
       </div>
 
       <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-zinc-800">
+        {userEmail && (
+          <div className="px-3 py-2 mb-1">
+            <p className="text-xs text-zinc-500 truncate">{userEmail}</p>
+          </div>
+        )}
         <Link
           href="/settings"
           className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100 transition-colors"
@@ -81,7 +86,7 @@ export function Navigation() {
         </Link>
         <button
           onClick={handleSignOut}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100 transition-colors"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-red-400/70 hover:bg-red-500/10 hover:text-red-400 transition-colors"
         >
           <LogOut className="h-5 w-5" />
           Sign Out
