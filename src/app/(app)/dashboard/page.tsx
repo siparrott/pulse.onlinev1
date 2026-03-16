@@ -1,6 +1,6 @@
 import { getUserWorkspace } from '@/lib/workspaces/get-user-workspace'
 import { createClient } from '@/lib/supabase/server'
-import { Layers, Calendar, Upload, ListTodo, TrendingUp, AlertTriangle, PenTool, Image, FileText, Shield, Settings, Mail, Zap, ScrollText } from 'lucide-react'
+import { Layers, Calendar, Upload, ListTodo, TrendingUp, AlertTriangle, PenTool, Image, FileText, Shield, Settings, Mail, Zap, ScrollText, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -149,19 +149,20 @@ export default async function DashboardPage() {
       {/* Quick Actions */}
       <div>
         <h2 className="text-xl font-semibold text-white mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {quickActions.map((action) => (
             <Link key={action.href} href={action.href}>
-              <Card className="hover:border-zinc-700 transition-colors cursor-pointer h-full">
+              <Card className="hover:border-zinc-700 transition-colors cursor-pointer h-full group">
                 <CardHeader>
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-zinc-800">
                       <action.icon className="h-5 w-5 text-emerald-500" />
                     </div>
-                    <div>
+                    <div className="flex-1">
                       <CardTitle>{action.label}</CardTitle>
                       <CardDescription>{action.description}</CardDescription>
                     </div>
+                    <ChevronRight className="h-4 w-4 text-zinc-600 group-hover:text-zinc-400 transition-colors" />
                   </div>
                 </CardHeader>
               </Card>

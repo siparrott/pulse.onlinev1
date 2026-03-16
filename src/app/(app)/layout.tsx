@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getUserWorkspace } from '@/lib/workspaces/get-user-workspace'
+import { Navigation } from '@/components/navigation'
 
 export default async function AppLayout({
   children,
@@ -17,42 +18,11 @@ export default async function AppLayout({
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <header className="border-b border-white/10 px-6 py-4">
-        <div className="mx-auto flex max-w-6xl items-center justify-between">
-          <div>
-            <p className="text-lg font-semibold">AxixOS</p>
-            <p className="text-sm text-white/60">
-              {workspace.name} · {role}
-            </p>
-            <p className="text-xs text-white/40">{user.email}</p>
-          </div>
-
-          <nav className="flex flex-wrap gap-4 text-sm text-white/70">
-            <a href="/dashboard" className="hover:text-white">Dashboard</a>
-            <a href="/composer" className="hover:text-white">Composer</a>
-            <a href="/queue" className="hover:text-white">Queue</a>
-            <a href="/calendar" className="hover:text-white">Calendar</a>
-            <a href="/imports" className="hover:text-white">CSV Import</a>
-            <a href="/channels" className="hover:text-white">Channels</a>
-            <a href="/assets" className="hover:text-white">Assets</a>
-            <a href="/publishing" className="hover:text-white">Publishing</a>
-            <a href="/analytics" className="hover:text-white">Analytics</a>
-            <a href="/audit" className="hover:text-white">Audit Log</a>
-            <a href="/digests" className="hover:text-white">Digests</a>
-            <a href="/automations" className="hover:text-white">Automations</a>
-            <a href="/settings" className="hover:text-white">Settings</a>
-          </nav>
-
-          <form action="/auth/signout" method="post">
-            <button className="rounded-lg border border-white/15 px-4 py-2 text-sm">
-              Sign out
-            </button>
-          </form>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-6xl p-6">{children}</main>
+    <div className="flex min-h-screen bg-zinc-950 text-zinc-100">
+      <Navigation userEmail={user.email} />
+      <main className="flex-1 pl-64">
+        <div className="p-8">{children}</div>
+      </main>
     </div>
   )
 }
